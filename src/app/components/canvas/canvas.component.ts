@@ -32,6 +32,9 @@ export class CanvasComponent implements OnInit, AfterViewInit {
   gridSize = 45;
   xPan = 0;
   yPan = 0;
+  snapToGrid: boolean = true;
+  potencialMovementX = 0;
+  potencialMovementY = 0;
 
   ngOnInit(): void {
     this.canvas = this.canvasElementRef.nativeElement;
@@ -188,8 +191,27 @@ export class CanvasComponent implements OnInit, AfterViewInit {
     if (this.lastX && this.lastY) {
       var xmovement = this.lastX - x;
       var ymovement = this.lastY - y;
-      element.x = element.x - xmovement;
-      element.y = element.y - ymovement;
+      if (this.snapToGrid) {
+        this.potencialMovementX = this.potencialMovementX + xmovement;
+        this.potencialMovementY = this.potencialMovementY + ymovement;
+        var newX =
+          Math.round((element.x - this.potencialMovementX) / this.gridSize) *
+          this.gridSize;
+        Math.round((element.y - this.potencialMovementY) / this.gridSize) *
+          this.gridSize;
+
+        if (newX != element.x) {
+          element.x = newX;
+          this.potencialMovementX = 0;
+        }
+        // if (newY != element.y - (this.yPan % this.gridSize)) {
+        //   element.y = newY;
+        //   this.potencialMovementY = 0;
+        // }
+      } else {
+        element.x = element.x - xmovement;
+        element.y = element.y - ymovement;
+      }
     }
   }
   private resizeElement(
