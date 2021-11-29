@@ -195,19 +195,32 @@ export class CanvasComponent implements OnInit, AfterViewInit {
         this.potencialMovementX = this.potencialMovementX + xmovement;
         this.potencialMovementY = this.potencialMovementY + ymovement;
         var newX =
-          Math.round((element.x - this.potencialMovementX) / this.gridSize) *
-          this.gridSize;
-        Math.round((element.y - this.potencialMovementY) / this.gridSize) *
-          this.gridSize;
+          Math.round(
+            (element.x -
+              (this.xPan % this.gridSize) -
+              this.potencialMovementX) /
+              this.gridSize
+          ) *
+            this.gridSize +
+          (this.xPan % this.gridSize);
+        var newY =
+          Math.round(
+            (element.y -
+              (this.yPan % this.gridSize) -
+              this.potencialMovementY) /
+              this.gridSize
+          ) *
+            this.gridSize +
+          (this.yPan % this.gridSize);
 
         if (newX != element.x) {
           element.x = newX;
           this.potencialMovementX = 0;
         }
-        // if (newY != element.y - (this.yPan % this.gridSize)) {
-        //   element.y = newY;
-        //   this.potencialMovementY = 0;
-        // }
+        if (newY != element.y) {
+          element.y = newY;
+          this.potencialMovementY = 0;
+        }
       } else {
         element.x = element.x - xmovement;
         element.y = element.y - ymovement;
@@ -223,39 +236,139 @@ export class CanvasComponent implements OnInit, AfterViewInit {
     if (this.lastX && this.lastY) {
       var xmovement = this.lastX - x;
       var ymovement = this.lastY - y;
-      if (AnchorPulled === 'topLeft') {
-        element.w = element.w + xmovement;
-        element.h = element.h + xmovement;
-        element.x = element.x - xmovement;
-        element.y = element.y - xmovement;
-      }
-      if (AnchorPulled === 'topRight') {
-        element.w = element.w - xmovement;
-        element.h = element.h - xmovement;
-        element.y = element.y + xmovement;
-      }
-      if (AnchorPulled === 'bottomLeft') {
-        element.w = element.w + xmovement;
-        element.h = element.h + xmovement;
-        element.x = element.x - xmovement;
-      }
-      if (AnchorPulled === 'bottomRight') {
-        element.w = element.w - xmovement;
-        element.h = element.h - xmovement;
-      }
-      if (AnchorPulled === 'top') {
-        element.h = element.h + ymovement;
-        element.y = element.y - ymovement;
-      }
-      if (AnchorPulled === 'bottom') {
-        element.h = element.h - ymovement;
-      }
-      if (AnchorPulled === 'left') {
-        element.w = element.w + xmovement;
-        element.x = element.x - xmovement;
-      }
-      if (AnchorPulled === 'right') {
-        element.w = element.w - xmovement;
+      if (this.snapToGrid) {
+        this.potencialMovementX = this.potencialMovementX + xmovement;
+        this.potencialMovementY = this.potencialMovementY + ymovement;
+        var newX =
+          Math.round(
+            (element.x -
+              (this.xPan % this.gridSize) -
+              this.potencialMovementX) /
+              this.gridSize
+          ) *
+            this.gridSize +
+          (this.xPan % this.gridSize);
+
+        var newY =
+          Math.round(
+            (element.y -
+              (this.yPan % this.gridSize) -
+              this.potencialMovementY) /
+              this.gridSize
+          ) *
+            this.gridSize +
+          (this.yPan % this.gridSize);
+        var deltaX = element.x - newX;
+        var deltaY = element.y - newY;
+        switch (this.AnchorPulled) {
+          case 'topLeft':
+            if (newX != element.x) {
+              element.w = element.w + deltaX;
+              element.h = element.h + deltaX;
+              element.y = element.y - deltaX;
+              element.x = newX;
+              this.potencialMovementX = 0;
+              this.potencialMovementY = 0;
+            }
+            break;
+          case 'topRight':
+            if (newX != element.x) {
+              element.w = element.w - deltaX;
+              element.h = element.h - deltaX;
+              element.y = element.y + deltaX;
+              this.potencialMovementX = 0;
+              this.potencialMovementY = 0;
+            }
+            break;
+          case 'bottomLeft':
+            if (newX != element.x) {
+              element.w = element.w + deltaX;
+              element.h = element.h + deltaX;
+              element.x = element.x - deltaX;
+              this.potencialMovementX = 0;
+              this.potencialMovementY = 0;
+            }
+            break;
+          case 'bottomRight':
+            if (newX != element.x) {
+              element.w = element.w - deltaX;
+              element.h = element.h - deltaX;
+              this.potencialMovementX = 0;
+              this.potencialMovementY = 0;
+            }
+            break;
+          case 'top':
+            if (newY != element.y) {
+              element.h = element.h + deltaY;
+              element.y = element.y - deltaY;
+              this.potencialMovementX = 0;
+              this.potencialMovementY = 0;
+            }
+            break;
+          case 'bottom':
+            if (newY != element.y) {
+              element.h = element.h - deltaY;
+              this.potencialMovementX = 0;
+              this.potencialMovementY = 0;
+            }
+            break;
+          case 'left':
+            if (newX != element.x) {
+              element.w = element.w + deltaX;
+              element.x = element.x - deltaX;
+              this.potencialMovementX = 0;
+              this.potencialMovementY = 0;
+            }
+            break;
+          case 'right':
+            if (newX != element.x) {
+              element.w = element.w - deltaX;
+              this.potencialMovementX = 0;
+              this.potencialMovementY = 0;
+            }
+            break;
+          default:
+            break;
+        }
+      } else {
+        switch (this.AnchorPulled) {
+          case 'topLeft':
+            element.w = element.w + xmovement;
+            element.h = element.h + xmovement;
+            element.x = element.x - xmovement;
+            element.y = element.y - xmovement;
+            break;
+          case 'topRight':
+            element.w = element.w - xmovement;
+            element.h = element.h - xmovement;
+            element.y = element.y + xmovement;
+            break;
+          case 'bottomLeft':
+            element.w = element.w + xmovement;
+            element.h = element.h + xmovement;
+            element.x = element.x - xmovement;
+            break;
+          case 'bottomRight':
+            element.w = element.w - xmovement;
+            element.h = element.h - xmovement;
+            break;
+          case 'top':
+            element.h = element.h + ymovement;
+            element.y = element.y - ymovement;
+            break;
+          case 'bottom':
+            element.h = element.h - ymovement;
+            break;
+          case 'left':
+            element.w = element.w + xmovement;
+            element.x = element.x - xmovement;
+            break;
+          case 'right':
+            element.w = element.w - xmovement;
+            break;
+          default:
+            break;
+        }
       }
     }
   }
