@@ -7,6 +7,7 @@ import {
   Output,
   ViewChild,
 } from '@angular/core';
+import { ImageObject } from 'src/app/models/image-object.model';
 import { BackgroundService } from 'src/app/services/background.service';
 
 @Component({
@@ -39,15 +40,15 @@ export class ToolOptionsComponent implements OnInit {
     reader.addEventListener('load', (event) => {
       var img = new Image();
       if (typeof event?.target?.result === 'string') {
-        var bg = {
-          h: -1,
-          w: -1,
+        var bg = new ImageObject({
+          height: -1,
+          width: -1,
           x: 0,
           y: 0,
           selected: false,
           element: new window.Image(),
           url: event.target.result,
-        };
+        });
         bg.element.src = bg.url;
         bg.element.addEventListener('load', () => {
           console.log([...this.layer, bg]);

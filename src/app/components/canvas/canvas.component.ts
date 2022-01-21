@@ -12,6 +12,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import { BackgroundService } from 'src/app/services/background.service';
+import { ANCHOR_CONFIG } from 'src/app/components/const/anchor.config';
 
 @Component({
   selector: 'app-canvas',
@@ -37,7 +38,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
   selectedElement: any;
   isDraggingMap: boolean = false;
   zoomValue: number = 1;
-  gridSize = 45;
   xPan = 0;
   yPan = 0;
   potencialMovementX = 0;
@@ -83,11 +83,13 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
   private mouseDown(event: MouseEvent) {
     console.log(this.zArray);
     if (event.button === 0) {
-      var anchor = this.getClickedAnchor(
-        event.offsetX,
-        event.offsetY,
-        this.selectedElement
-      );
+      var anchor;
+      if (this.selectedElement) {
+        anchor = this.selectedElement.getClickedAnchor(
+          event.offsetX,
+          event.offsetY
+        );
+      }
       if (anchor) {
         this.lastX = event.offsetX;
         this.lastY = event.offsetY;
@@ -98,7 +100,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
         for (let i = this.zArray.length - 1; i >= 0; i--) {
           const element = this.zArray[i];
           this.drawGrid();
-          if (this.isInBounds(event.offsetX, event.offsetY, element)) {
+          if (element.isInBounds(event.offsetX, event.offsetY)) {
             if (!first) {
               this.selectedElement = element;
             }
@@ -112,7 +114,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
       }
       if (
         this.selectedElement &&
-        this.isInBounds(event.offsetX, event.offsetY, this.selectedElement)
+        this.selectedElement.isInBounds(event.offsetX, event.offsetY)
       ) {
         this.lastX = event.offsetX;
         this.lastY = event.offsetY;
@@ -131,11 +133,15 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
   private mouseDrag(event: MouseEvent) {
     if (this.AnchorPulled && this.lastX && this.lastY) {
       console.log('Pulling Anchor', event);
-      this.resizeElement(
+      this.selectedElement.resizeElement(
         this.AnchorPulled,
+        this.lastX,
+        this.lastY,
         event.offsetX,
         event.offsetY,
-        this.selectedElement
+        this.backgroundService,
+        this.xPan,
+        this.yPan
       );
       this.lastX = event.offsetX;
       this.lastY = event.offsetY;
@@ -143,7 +149,15 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
     }
     if (this.isDraggingElement && this.lastX && this.lastY) {
       console.log('Draging element', event);
-      this.moveElement(event.offsetX, event.offsetY, this.selectedElement);
+      this.selectedElement.moveElement(
+        this.lastX,
+        this.lastY,
+        event.offsetX,
+        event.offsetY,
+        this.backgroundService,
+        this.xPan,
+        this.yPan
+      );
       this.lastX = event.offsetX;
       this.lastY = event.offsetY;
       this.render();
@@ -174,17 +188,16 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
   }
 
   private zoom(delta: number) {
-    var zoom = 1 + -delta / 1000;
-    this.gridSize = this.gridSize * zoom;
-    this.xPan = this.xPan * zoom;
-    this.yPan = this.yPan * zoom;
+    this.zoomValue = this.zoomValue + -delta / 1000;
+    this.xPan = this.xPan * this.zoomValue;
+    this.yPan = this.yPan * this.zoomValue;
     // if (zoom > 0) {
-    this.zArray.forEach((element) => {
-      element.x = element.x * zoom;
-      element.y = element.y * zoom;
-      element.w = element.w * zoom;
-      element.h = element.h * zoom;
-    });
+    // this.zArray.forEach((element) => {
+    //   element.x = element.x * zoom;
+    //   element.y = element.y * zoom;
+    //   element.width = element.width * zoom;
+    //   element.height = element.height * zoom;
+    // });
     this.render();
     // }
   }
@@ -202,192 +215,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
       this.lastX = x;
       this.lastY = y;
       this.render();
-    }
-  }
-  private moveElement(x: number, y: number, element: any) {
-    if (this.lastX && this.lastY) {
-      var xmovement = this.lastX - x;
-      var ymovement = this.lastY - y;
-      if (this.backgroundService.snapToGrid) {
-        this.potencialMovementX = this.potencialMovementX + xmovement / 2;
-        this.potencialMovementY = this.potencialMovementY + ymovement;
-        var newX =
-          Math.round(
-            (element.x -
-              (this.xPan % this.gridSize) -
-              this.potencialMovementX) /
-              this.gridSize
-          ) *
-            this.gridSize +
-          (this.xPan % this.gridSize);
-        var newY =
-          Math.round(
-            (element.y -
-              (this.yPan % this.gridSize) -
-              this.potencialMovementY) /
-              this.gridSize
-          ) *
-            this.gridSize +
-          (this.yPan % this.gridSize);
-
-        if (newX != element.x) {
-          element.x = newX;
-          this.potencialMovementX = 0;
-        }
-        if (newY != element.y) {
-          element.y = newY;
-          this.potencialMovementY = 0;
-        }
-      } else {
-        element.x = element.x - xmovement;
-        element.y = element.y - ymovement;
-      }
-    }
-  }
-  private resizeElement(
-    AnchorPulled: string,
-    x: number,
-    y: number,
-    element: any
-  ) {
-    if (this.lastX && this.lastY) {
-      var xmovement = this.lastX - x;
-      var ymovement = this.lastY - y;
-      var ratio = element.w / element.h;
-      if (this.backgroundService.snapToGrid) {
-        this.potencialMovementX = this.potencialMovementX + xmovement;
-        this.potencialMovementY = this.potencialMovementY + ymovement;
-        var newX =
-          Math.round(
-            (element.x -
-              (this.xPan % this.gridSize) -
-              this.potencialMovementX) /
-              this.gridSize
-          ) *
-            this.gridSize +
-          (this.xPan % this.gridSize);
-
-        var newY =
-          Math.round(
-            (element.y -
-              (this.yPan % this.gridSize) -
-              this.potencialMovementY) /
-              this.gridSize
-          ) *
-            this.gridSize +
-          (this.yPan % this.gridSize);
-        var deltaX = element.x - newX;
-        var deltaY = element.y - newY;
-        switch (this.AnchorPulled) {
-          case 'topLeft':
-            if (newX != element.x) {
-              element.w = element.w + deltaX;
-              element.h = element.w / ratio;
-              element.y = element.y - deltaX;
-              element.x = newX;
-              this.potencialMovementX = 0;
-              this.potencialMovementY = 0;
-            }
-            break;
-          case 'topRight':
-            if (newX != element.x) {
-              element.w = element.w - deltaX;
-              element.h = element.w / ratio;
-              element.y = element.y + deltaX;
-              this.potencialMovementX = 0;
-              this.potencialMovementY = 0;
-            }
-            break;
-          case 'bottomLeft':
-            if (newX != element.x) {
-              element.w = element.w + deltaX;
-              element.h = element.w / ratio;
-              element.x = element.x - deltaX;
-              this.potencialMovementX = 0;
-              this.potencialMovementY = 0;
-            }
-            break;
-          case 'bottomRight':
-            if (newX != element.x) {
-              element.w = element.w - deltaX;
-              element.h = element.w / ratio;
-              this.potencialMovementX = 0;
-              this.potencialMovementY = 0;
-            }
-            break;
-          case 'top':
-            if (newY != element.y) {
-              element.h = element.h + deltaY;
-              element.y = element.y - deltaY;
-              this.potencialMovementX = 0;
-              this.potencialMovementY = 0;
-            }
-            break;
-          case 'bottom':
-            if (newY != element.y) {
-              element.h = element.h - deltaY;
-              this.potencialMovementX = 0;
-              this.potencialMovementY = 0;
-            }
-            break;
-          case 'left':
-            if (newX != element.x) {
-              element.w = element.w + deltaX;
-              element.x = element.x - deltaX;
-              this.potencialMovementX = 0;
-              this.potencialMovementY = 0;
-            }
-            break;
-          case 'right':
-            if (newX != element.x) {
-              element.w = element.w - deltaX;
-              this.potencialMovementX = 0;
-              this.potencialMovementY = 0;
-            }
-            break;
-          default:
-            break;
-        }
-      } else {
-        switch (this.AnchorPulled) {
-          case 'topLeft':
-            element.w = element.w + xmovement;
-            element.h = element.w / ratio;
-            element.x = element.x - xmovement;
-            element.y = element.y - xmovement;
-            break;
-          case 'topRight':
-            element.w = element.w - xmovement;
-            element.h = element.w / ratio;
-            element.y = element.y + xmovement;
-            break;
-          case 'bottomLeft':
-            element.w = element.w + xmovement;
-            element.h = element.w / ratio;
-            element.x = element.x - xmovement;
-            break;
-          case 'bottomRight':
-            element.w = element.w - xmovement;
-            element.h = element.w / ratio;
-            break;
-          case 'top':
-            element.h = element.h + ymovement;
-            element.y = element.y - ymovement;
-            break;
-          case 'bottom':
-            element.h = element.h - ymovement;
-            break;
-          case 'left':
-            element.w = element.w + xmovement;
-            element.x = element.x - xmovement;
-            break;
-          case 'right':
-            element.w = element.w - xmovement;
-            break;
-          default:
-            break;
-        }
-      }
     }
   }
 
@@ -411,16 +238,32 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
     this.context.strokeStyle = '#333333';
     this.context.fillStyle = '#333333';
     this.context.lineWidth = 0.5;
-    for (let i = this.xPan; i < this.canvas.width; i += this.gridSize) {
+    for (
+      let i = this.xPan;
+      i < this.canvas.width;
+      i += this.backgroundService.gridSize * this.zoomValue
+    ) {
       this.drawLine(i, 0, i, this.canvas.height);
     }
-    for (let i = this.yPan; i < this.canvas.height; i += this.gridSize) {
+    for (
+      let i = this.yPan;
+      i < this.canvas.height;
+      i += this.backgroundService.gridSize * this.zoomValue
+    ) {
       this.drawLine(0, i, this.canvas.width, i);
     }
-    for (let i = this.xPan; i > 0; i -= this.gridSize) {
+    for (
+      let i = this.xPan;
+      i > 0;
+      i -= this.backgroundService.gridSize * this.zoomValue
+    ) {
       this.drawLine(i, 0, i, this.canvas.height);
     }
-    for (let i = this.yPan; i > 0; i -= this.gridSize) {
+    for (
+      let i = this.yPan;
+      i > 0;
+      i -= this.backgroundService.gridSize * this.zoomValue
+    ) {
       this.drawLine(0, i, this.canvas.width, i);
     }
   }
@@ -432,114 +275,56 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
     this.context.stroke();
   }
 
-  private getClickedAnchor(
-    x: number,
-    y: number,
-    element: any
-  ): string | undefined {
-    if (!element) return undefined;
-    var topLeft = {
-      w: 16,
-      h: 16,
-      x: element.x - 10 - 8,
-      y: element.y - 10 - 8,
-    };
-    var topRight = {
-      w: 16,
-      h: 16,
-      x: element.x + element.w + 10 - 8,
-      y: element.y - 10 - 8,
-    };
-    var bottomLeft = {
-      w: 16,
-      h: 16,
-      x: element.x - 10 - 8,
-      y: element.y + element.h + 10 - 8,
-    };
-    var bottomRight = {
-      w: 16,
-      h: 16,
-      x: element.x + element.w + 10 - 8,
-      y: element.y + element.h + 10 - 8,
-    };
-    var top = {
-      w: 16,
-      h: 16,
-      x: element.x + element.w / 2 - 8,
-      y: element.y - 10 - 8,
-    };
-    var bottom = {
-      w: 16,
-      h: 16,
-      x: element.x + element.w / 2 - 8,
-      y: element.y + element.h + 10 - 8,
-    };
-    var left = {
-      w: 16,
-      h: 16,
-      x: element.x - 10 - 8,
-      y: element.y + element.h / 2 - 8,
-    };
-    var right = {
-      w: 16,
-      h: 16,
-      x: element.x + element.w + 10 - 8,
-      y: element.y + element.h / 2 - 8,
-    };
-    if (this.isInBounds(x, y, topLeft)) {
-      return 'topLeft';
-    } else if (this.isInBounds(x, y, topRight)) {
-      return 'topRight';
-    } else if (this.isInBounds(x, y, bottomLeft)) {
-      return 'bottomLeft';
-    } else if (this.isInBounds(x, y, bottomRight)) {
-      return 'bottomRight';
-    } else if (this.isInBounds(x, y, top)) {
-      return 'top';
-    } else if (this.isInBounds(x, y, bottom)) {
-      return 'bottom';
-    } else if (this.isInBounds(x, y, left)) {
-      return 'left';
-    } else if (this.isInBounds(x, y, right)) {
-      return 'right';
-    } else {
-      return undefined;
-    }
-  }
-
-  //this function draws a square around a image with a padding of 10px and a anchor in every corner
+  //this function draws a square around a image with a padding and a anchor in every corner
   private drawAnchors(image: any) {
-    this.context.strokeStyle = '#2196f3';
-    this.context.lineWidth = 1;
+    this.context.strokeStyle = ANCHOR_CONFIG.lineColor;
+    this.context.lineWidth = ANCHOR_CONFIG.lineWidth;
     this.context.strokeRect(
-      image.x - 10,
-      image.y - 10,
-      image.w + 20,
-      image.h + 20
+      (image.x - ANCHOR_CONFIG.padding) * this.zoomValue,
+      (image.y - ANCHOR_CONFIG.padding) * this.zoomValue,
+      (image.width + ANCHOR_CONFIG.padding * 2) * this.zoomValue,
+      (image.height + ANCHOR_CONFIG.padding * 2) * this.zoomValue
     );
-    this.drawAnchor(image.x - 10, image.y - 10);
-    this.drawAnchor(image.x + image.w + 10, image.y - 10);
-    this.drawAnchor(image.x - 10, image.y + image.h + 10);
-    this.drawAnchor(image.x + image.w + 10, image.y + image.h + 10);
-    this.drawAnchor(image.x + image.w / 2, image.y - 10);
-    this.drawAnchor(image.x + image.w / 2, image.y + image.h + 10);
-    this.drawAnchor(image.x - 10, image.y + image.h / 2);
-    this.drawAnchor(image.x + image.w + 10, image.y + image.h / 2);
+    this.drawAnchor(
+      image.x - ANCHOR_CONFIG.padding,
+      image.y - ANCHOR_CONFIG.padding
+    );
+    this.drawAnchor(
+      image.x + image.width + ANCHOR_CONFIG.padding,
+      image.y - ANCHOR_CONFIG.padding
+    );
+    this.drawAnchor(
+      image.x - ANCHOR_CONFIG.padding,
+      image.y + image.height + ANCHOR_CONFIG.padding
+    );
+    this.drawAnchor(
+      image.x + image.width + ANCHOR_CONFIG.padding,
+      image.y + image.height + ANCHOR_CONFIG.padding
+    );
+    this.drawAnchor(image.x + image.width / 2, image.y - ANCHOR_CONFIG.padding);
+    this.drawAnchor(
+      image.x + image.width / 2,
+      image.y + image.height + ANCHOR_CONFIG.padding
+    );
+    this.drawAnchor(
+      image.x - ANCHOR_CONFIG.padding,
+      image.y + image.height / 2
+    );
+    this.drawAnchor(
+      image.x + image.width + ANCHOR_CONFIG.padding,
+      image.y + image.height / 2
+    );
   }
 
   private drawAnchor(x: number, y: number) {
-    this.context.strokeStyle = '#2196f3';
-    this.context.fillStyle = '#2196f3';
-    this.context.lineWidth = 1;
-    this.context.fillRect(x - 4, y - 4, 8, 8);
-  }
-
-  private isInBounds(x: number, y: number, element: any) {
-    return (
-      x >= element.x &&
-      x <= element.x + element.w &&
-      y >= element.y &&
-      y <= element.y + element.h
+    this.context.strokeStyle = ANCHOR_CONFIG.fillColor;
+    this.context.fillStyle = ANCHOR_CONFIG.fillColor;
+    this.context.lineWidth = ANCHOR_CONFIG.lineWidth;
+    this.context.fillRect(
+      (x - ANCHOR_CONFIG.size / 2) * this.zoomValue,
+      (y - ANCHOR_CONFIG.size / 2) * this.zoomValue,
+      ANCHOR_CONFIG.size,
+      ANCHOR_CONFIG.size
     );
   }
 
@@ -550,62 +335,18 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
     this.render();
   }
 
-  // private addImage() {
-  //   var bg = {
-  //     h: 1620,
-  //     w: 1620,
-  //     x: 0,
-  //     y: 0,
-  //     selected: false,
-  //     element: new window.Image(),
-  //     url: 'assets/map1.jpg',
-  //   };
-  //   bg.element.addEventListener('load', () => {
-  //     this.render();
-  //   });
-  //   bg.element.src = bg.url;
-  //   this.zArray.push(bg);
-  //   // var bg2 = {
-  //   //   h: 900,
-  //   //   w: 900,
-  //   //   x: 400,
-  //   //   y: 400,
-  //   //   selected: false,
-  //   //   element: new window.Image(),
-  //   //   url: 'assets/map1.jpg',
-  //   // };
-  //   // bg2.element.addEventListener('load', () => {
-  //   //   this.render();
-  //   // });
-  //   // bg2.element.src = bg2.url;
-
-  //   // this.zArray.push(bg2);
-
-  //   // var bg3 = {
-  //   //   h: 200,
-  //   //   w: 200,
-  //   //   x: 800,
-  //   //   y: 300,
-  //   //   selected: false,
-  //   //   element: new window.Image(),
-  //   //   url: 'assets/map1.jpg',
-  //   // };
-  //   // bg3.element.addEventListener('load', () => {
-  //   //   this.render();
-  //   // });
-  //   // bg3.element.src = bg3.url;
-
-  //   // this.zArray.push(bg3);
-  // }
-
   drawImage(image: any) {
-    if (image.h == -1) {
-      this.context.drawImage(image.element, image.x, image.y);
-      image.h = image.element.height;
-      image.w = image.element.width;
-    } else {
-      this.context.drawImage(image.element, image.x, image.y, image.w, image.h);
+    if (image.height == -1) {
+      image.height = image.element.height;
+      image.width = image.element.width;
     }
+    this.context.drawImage(
+      image.element,
+      image.x * this.zoomValue,
+      image.y * this.zoomValue,
+      image.width * this.zoomValue,
+      image.height * this.zoomValue
+    );
   }
 
   private render() {

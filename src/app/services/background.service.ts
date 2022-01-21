@@ -4,4 +4,5 @@ import { Injectable } from '@angular/core';
 export class BackgroundService {
   constructor() {}
   snapToGrid: boolean = false;
+  gridSize: number = 45;
 }
