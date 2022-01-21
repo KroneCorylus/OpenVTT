@@ -1,21 +1,26 @@
-import { ThisReceiver } from '@angular/compiler';
-import { i18nMetaToJSDoc } from '@angular/compiler/src/render3/view/i18n/meta';
 import {
   AfterViewInit,
+  ChangeDetectionStrategy,
   Component,
   ElementRef,
+  EventEmitter,
+  Input,
+  OnChanges,
   OnInit,
+  Output,
+  SimpleChanges,
   ViewChild,
 } from '@angular/core';
+import { BackgroundService } from 'src/app/services/background.service';
 
 @Component({
   selector: 'app-canvas',
   templateUrl: './canvas.component.html',
   styleUrls: ['./canvas.component.scss'],
 })
-export class CanvasComponent implements OnInit, AfterViewInit {
+export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
   isDraggingElement: boolean = false;
-  constructor() {}
+  constructor(public backgroundService: BackgroundService) {}
 
   @ViewChild('layer1', { static: true })
   canvasElementRef!: ElementRef<HTMLCanvasElement>;
@@ -25,25 +30,37 @@ export class CanvasComponent implements OnInit, AfterViewInit {
   lastY?: number;
   AnchorPulled: string | undefined;
 
+  @Input()
   zArray: any[] = [];
+  @Output() zArrayChange = new EventEmitter<any[]>();
+
   selectedElement: any;
   isDraggingMap: boolean = false;
   zoomValue: number = 1;
   gridSize = 45;
   xPan = 0;
   yPan = 0;
-  snapToGrid: boolean = true;
   potencialMovementX = 0;
   potencialMovementY = 0;
 
   ngOnInit(): void {
     this.canvas = this.canvasElementRef.nativeElement;
     this.context = this.canvas.getContext('2d')!;
-    this.addImage();
+    // this.addImage();
   }
 
   ngAfterViewInit() {
     this.initCanvas();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    console.log('ngOnChanges', changes);
+    if (this.context) {
+      if (changes.zArray) {
+        console.log('onChanges', changes.zArray);
+        this.render();
+      }
+    }
   }
 
   private initCanvas() {
@@ -64,7 +81,7 @@ export class CanvasComponent implements OnInit, AfterViewInit {
   //Events
 
   private mouseDown(event: MouseEvent) {
-    console.log('mouseDown', event);
+    console.log(this.zArray);
     if (event.button === 0) {
       var anchor = this.getClickedAnchor(
         event.offsetX,
@@ -191,8 +208,8 @@ export class CanvasComponent implements OnInit, AfterViewInit {
     if (this.lastX && this.lastY) {
       var xmovement = this.lastX - x;
       var ymovement = this.lastY - y;
-      if (this.snapToGrid) {
-        this.potencialMovementX = this.potencialMovementX + xmovement;
+      if (this.backgroundService.snapToGrid) {
+        this.potencialMovementX = this.potencialMovementX + xmovement / 2;
         this.potencialMovementY = this.potencialMovementY + ymovement;
         var newX =
           Math.round(
@@ -236,7 +253,8 @@ export class CanvasComponent implements OnInit, AfterViewInit {
     if (this.lastX && this.lastY) {
       var xmovement = this.lastX - x;
       var ymovement = this.lastY - y;
-      if (this.snapToGrid) {
+      var ratio = element.w / element.h;
+      if (this.backgroundService.snapToGrid) {
         this.potencialMovementX = this.potencialMovementX + xmovement;
         this.potencialMovementY = this.potencialMovementY + ymovement;
         var newX =
@@ -264,7 +282,7 @@ export class CanvasComponent implements OnInit, AfterViewInit {
           case 'topLeft':
             if (newX != element.x) {
               element.w = element.w + deltaX;
-              element.h = element.h + deltaX;
+              element.h = element.w / ratio;
               element.y = element.y - deltaX;
               element.x = newX;
               this.potencialMovementX = 0;
@@ -274,7 +292,7 @@ export class CanvasComponent implements OnInit, AfterViewInit {
           case 'topRight':
             if (newX != element.x) {
               element.w = element.w - deltaX;
-              element.h = element.h - deltaX;
+              element.h = element.w / ratio;
               element.y = element.y + deltaX;
               this.potencialMovementX = 0;
               this.potencialMovementY = 0;
@@ -283,7 +301,7 @@ export class CanvasComponent implements OnInit, AfterViewInit {
           case 'bottomLeft':
             if (newX != element.x) {
               element.w = element.w + deltaX;
-              element.h = element.h + deltaX;
+              element.h = element.w / ratio;
               element.x = element.x - deltaX;
               this.potencialMovementX = 0;
               this.potencialMovementY = 0;
@@ -292,7 +310,7 @@ export class CanvasComponent implements OnInit, AfterViewInit {
           case 'bottomRight':
             if (newX != element.x) {
               element.w = element.w - deltaX;
-              element.h = element.h - deltaX;
+              element.h = element.w / ratio;
               this.potencialMovementX = 0;
               this.potencialMovementY = 0;
             }
@@ -334,23 +352,23 @@ export class CanvasComponent implements OnInit, AfterViewInit {
         switch (this.AnchorPulled) {
           case 'topLeft':
             element.w = element.w + xmovement;
-            element.h = element.h + xmovement;
+            element.h = element.w / ratio;
             element.x = element.x - xmovement;
             element.y = element.y - xmovement;
             break;
           case 'topRight':
             element.w = element.w - xmovement;
-            element.h = element.h - xmovement;
+            element.h = element.w / ratio;
             element.y = element.y + xmovement;
             break;
           case 'bottomLeft':
             element.w = element.w + xmovement;
-            element.h = element.h + xmovement;
+            element.h = element.w / ratio;
             element.x = element.x - xmovement;
             break;
           case 'bottomRight':
             element.w = element.w - xmovement;
-            element.h = element.h - xmovement;
+            element.h = element.w / ratio;
             break;
           case 'top':
             element.h = element.h + ymovement;
@@ -385,6 +403,7 @@ export class CanvasComponent implements OnInit, AfterViewInit {
     const index = this.zArray.indexOf(element);
     this.zArray.splice(index, 1);
     this.selectedElement = undefined;
+    this.zArrayChange.emit(this.zArray);
     this.render();
   }
 
@@ -531,56 +550,62 @@ export class CanvasComponent implements OnInit, AfterViewInit {
     this.render();
   }
 
-  private addImage() {
-    var bg = {
-      h: 1620,
-      w: 1620,
-      x: 0,
-      y: 0,
-      selected: false,
-      element: new window.Image(),
-      url: 'assets/map1.jpg',
-    };
-    bg.element.addEventListener('load', () => {
-      this.render();
-    });
-    bg.element.src = bg.url;
-    this.zArray.push(bg);
-    // var bg2 = {
-    //   h: 900,
-    //   w: 900,
-    //   x: 400,
-    //   y: 400,
-    //   selected: false,
-    //   element: new window.Image(),
-    //   url: 'assets/map1.jpg',
-    // };
-    // bg2.element.addEventListener('load', () => {
-    //   this.render();
-    // });
-    // bg2.element.src = bg2.url;
+  // private addImage() {
+  //   var bg = {
+  //     h: 1620,
+  //     w: 1620,
+  //     x: 0,
+  //     y: 0,
+  //     selected: false,
+  //     element: new window.Image(),
+  //     url: 'assets/map1.jpg',
+  //   };
+  //   bg.element.addEventListener('load', () => {
+  //     this.render();
+  //   });
+  //   bg.element.src = bg.url;
+  //   this.zArray.push(bg);
+  //   // var bg2 = {
+  //   //   h: 900,
+  //   //   w: 900,
+  //   //   x: 400,
+  //   //   y: 400,
+  //   //   selected: false,
+  //   //   element: new window.Image(),
+  //   //   url: 'assets/map1.jpg',
+  //   // };
+  //   // bg2.element.addEventListener('load', () => {
+  //   //   this.render();
+  //   // });
+  //   // bg2.element.src = bg2.url;
 
-    // this.zArray.push(bg2);
+  //   // this.zArray.push(bg2);
 
-    // var bg3 = {
-    //   h: 200,
-    //   w: 200,
-    //   x: 800,
-    //   y: 300,
-    //   selected: false,
-    //   element: new window.Image(),
-    //   url: 'assets/map1.jpg',
-    // };
-    // bg3.element.addEventListener('load', () => {
-    //   this.render();
-    // });
-    // bg3.element.src = bg3.url;
+  //   // var bg3 = {
+  //   //   h: 200,
+  //   //   w: 200,
+  //   //   x: 800,
+  //   //   y: 300,
+  //   //   selected: false,
+  //   //   element: new window.Image(),
+  //   //   url: 'assets/map1.jpg',
+  //   // };
+  //   // bg3.element.addEventListener('load', () => {
+  //   //   this.render();
+  //   // });
+  //   // bg3.element.src = bg3.url;
 
-    // this.zArray.push(bg3);
-  }
+  //   // this.zArray.push(bg3);
+  // }
 
   drawImage(image: any) {
-    this.context.drawImage(image.element, image.x, image.y, image.w, image.h);
+    if (image.h == -1) {
+      this.context.drawImage(image.element, image.x, image.y);
+      image.h = image.element.height;
+      image.w = image.element.width;
+    } else {
+      this.context.drawImage(image.element, image.x, image.y, image.w, image.h);
+    }
   }
 
   private render() {

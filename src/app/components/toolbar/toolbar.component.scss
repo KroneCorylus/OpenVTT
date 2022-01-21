@@ -1,0 +1,35 @@
+.toolbar {
+  flex-direction: column;
+  height: fit-content;
+  display: flex;
+  background-color: #fafafa;
+  position: fixed;
+  border-radius: 3px;
+  top: 0;
+  bottom: 0;
+  margin: auto;
+  left: 10px;
+  padding: 5px 5px;
+  .button {
+    margin: 2px 0;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    transition: background-color 0.3s ease;
+  }
+  .button:hover {
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    background-color: #e0e0e0;
+  }
+  .separator {
+    margin: 5px;
+    div {
+      height: 1px;
+      background-color: #333333;
+    }
+  }
+}
