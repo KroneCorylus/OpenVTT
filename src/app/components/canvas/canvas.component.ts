@@ -65,7 +65,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
 
   private initCanvas() {
     this.resizeCanvasToDisplaySize();
-
     this.canvas.addEventListener('mousedown', this.mouseDown.bind(this), false);
     this.canvas.addEventListener('mousemove', this.mouseDrag.bind(this), false);
     this.canvas.addEventListener('mouseup', this.mouseUp.bind(this), false);
@@ -164,7 +163,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
     }
     if (this.isDraggingMap) {
       console.log('is dragging');
-      this.moveMap(event.offsetX, event.offsetY);
+      this.pan(event.offsetX, event.offsetY);
     }
   }
   private mouseUp(event: MouseEvent) {
@@ -188,22 +187,23 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
   }
 
   private zoom(delta: number) {
+    var zoom = 1 + -delta / 1000;
+    this.backgroundService.gridSize = this.backgroundService.gridSize * zoom;
+    this.xPan = this.xPan * zoom;
+    this.yPan = this.yPan * zoom;
     this.zoomValue = this.zoomValue + -delta / 1000;
-    this.xPan = this.xPan * this.zoomValue;
-    this.yPan = this.yPan * this.zoomValue;
-    // if (zoom > 0) {
-    // this.zArray.forEach((element) => {
-    //   element.x = element.x * zoom;
-    //   element.y = element.y * zoom;
-    //   element.width = element.width * zoom;
-    //   element.height = element.height * zoom;
-    // });
+    this.zArray.forEach((element) => {
+      element.x = element.x * zoom;
+      element.y = element.y * zoom;
+      element.width = element.width * zoom;
+      element.height = element.height * zoom;
+    });
     this.render();
-    // }
+    console.log('zoomValue', this.zoomValue);
   }
-  private moveMap(x: number, y: number) {
+  private pan(x: number, y: number) {
     if (this.lastX && this.lastY) {
-      console.log('inside moveMap');
+      console.log('paning', x, y);
       var xmovement = this.lastX - x;
       var ymovement = this.lastY - y;
       this.zArray.forEach((element) => {
@@ -241,29 +241,21 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
     for (
       let i = this.xPan;
       i < this.canvas.width;
-      i += this.backgroundService.gridSize * this.zoomValue
+      i += this.backgroundService.gridSize
     ) {
       this.drawLine(i, 0, i, this.canvas.height);
     }
     for (
       let i = this.yPan;
       i < this.canvas.height;
-      i += this.backgroundService.gridSize * this.zoomValue
+      i += this.backgroundService.gridSize
     ) {
       this.drawLine(0, i, this.canvas.width, i);
     }
-    for (
-      let i = this.xPan;
-      i > 0;
-      i -= this.backgroundService.gridSize * this.zoomValue
-    ) {
+    for (let i = this.xPan; i > 0; i -= this.backgroundService.gridSize) {
       this.drawLine(i, 0, i, this.canvas.height);
     }
-    for (
-      let i = this.yPan;
-      i > 0;
-      i -= this.backgroundService.gridSize * this.zoomValue
-    ) {
+    for (let i = this.yPan; i > 0; i -= this.backgroundService.gridSize) {
       this.drawLine(0, i, this.canvas.width, i);
     }
   }
@@ -280,10 +272,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
     this.context.strokeStyle = ANCHOR_CONFIG.lineColor;
     this.context.lineWidth = ANCHOR_CONFIG.lineWidth;
     this.context.strokeRect(
-      (image.x - ANCHOR_CONFIG.padding) * this.zoomValue,
-      (image.y - ANCHOR_CONFIG.padding) * this.zoomValue,
-      (image.width + ANCHOR_CONFIG.padding * 2) * this.zoomValue,
-      (image.height + ANCHOR_CONFIG.padding * 2) * this.zoomValue
+      image.x - ANCHOR_CONFIG.padding,
+      image.y - ANCHOR_CONFIG.padding,
+      image.width + ANCHOR_CONFIG.padding * 2,
+      image.height + ANCHOR_CONFIG.padding * 2
     );
     this.drawAnchor(
       image.x - ANCHOR_CONFIG.padding,
@@ -321,8 +313,8 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
     this.context.fillStyle = ANCHOR_CONFIG.fillColor;
     this.context.lineWidth = ANCHOR_CONFIG.lineWidth;
     this.context.fillRect(
-      (x - ANCHOR_CONFIG.size / 2) * this.zoomValue,
-      (y - ANCHOR_CONFIG.size / 2) * this.zoomValue,
+      x - ANCHOR_CONFIG.size / 2,
+      y - ANCHOR_CONFIG.size / 2,
       ANCHOR_CONFIG.size,
       ANCHOR_CONFIG.size
     );
@@ -342,10 +334,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
     }
     this.context.drawImage(
       image.element,
-      image.x * this.zoomValue,
-      image.y * this.zoomValue,
-      image.width * this.zoomValue,
-      image.height * this.zoomValue
+      image.x,
+      image.y,
+      image.width,
+      image.height
     );
   }
 
