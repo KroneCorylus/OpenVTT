@@ -335,7 +335,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
     this.render();
   }
 
-  drawImage(image: any) {
+  private drawImage(image: any) {
     if (image.height == -1) {
       image.height = image.element.height;
       image.width = image.element.width;
@@ -354,9 +354,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
     this.zArray.forEach((element: any) => {
       this.drawImage(element);
     });
+    this.drawGrid();
     if (this.selectedElement) {
       this.drawAnchors(this.selectedElement);
     }
-    this.drawGrid();
   }
 }
