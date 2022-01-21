@@ -5,10 +5,13 @@
   background-color: #fafafa;
   position: fixed;
   border-radius: 3px;
-  top: 0;
+  top: 10px;
   margin: auto;
   left: 0;
   right: 0;
   padding: 5px 5px;
   align-items: center;
+}
+.tooloptions > div {
+  margin: 0 5px;
 }
