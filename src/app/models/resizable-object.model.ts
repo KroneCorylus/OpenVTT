@@ -1,3 +1,5 @@
+import { ɵɵsetComponentScope } from '@angular/core';
+
 export class ResizableObject {
   constructor(params: any) {
     this.x = params.x;
@@ -252,41 +254,78 @@ export class ResizableObject {
     yPan: number
   ) {
     if (lastX && lastY) {
-      var xmovement = lastX - x;
-      var ymovement = lastY - y;
+      var xmovement = x - lastX;
+      var ymovement = y - lastY;
       if (backgroundService.snapToGrid) {
-        this.potencialMovementX = this.potencialMovementX + xmovement / 2;
-        this.potencialMovementY = this.potencialMovementY + ymovement;
+        const gridOffsetX =
+          (((xPan % backgroundService.gridSize) % backgroundService.gridSize) +
+            backgroundService.gridSize) %
+          backgroundService.gridSize;
+        const gridOffsetY =
+          (((yPan % backgroundService.gridSize) % backgroundService.gridSize) +
+            backgroundService.gridSize) %
+          backgroundService.gridSize;
         var newX =
-          Math.round(
-            (this.x -
-              (xPan % backgroundService.gridSize) -
-              this.potencialMovementX) /
-              backgroundService.gridSize
-          ) *
+          Math.round(x / backgroundService.gridSize) *
             backgroundService.gridSize +
-          (xPan % backgroundService.gridSize);
+          gridOffsetX;
         var newY =
-          Math.round(
-            (this.y -
-              (yPan % backgroundService.gridSize) -
-              this.potencialMovementY) /
-              backgroundService.gridSize
-          ) *
+          Math.round(y / backgroundService.gridSize) *
             backgroundService.gridSize +
-          (yPan % backgroundService.gridSize);
+          gridOffsetY;
 
         if (newX != this.x) {
           this.x = newX;
-          this.potencialMovementX = 0;
         }
         if (newY != this.y) {
           this.y = newY;
-          this.potencialMovementY = 0;
         }
+        // if (newX != this.x) {
+        //   this.x = newX;
+        // }
+
+        // var newX =
+        //   Math.round(
+        //     (this.x -
+        //       (xPan % backgroundService.gridSize) -
+        //       this.potencialMovementX) /
+        //       backgroundService.gridSize
+        //   ) *
+        //     backgroundService.gridSize +
+        //   (xPan % backgroundService.gridSize);
+        // var newY =
+        //   Math.round(
+        //     (this.y -
+        //       (yPan % backgroundService.gridSize) -
+        //       this.potencialMovementY) /
+        //       backgroundService.gridSize
+        //   ) *
+        //     backgroundService.gridSize +
+        //   (yPan % backgroundService.gridSize);
+        // var pepe = {
+        //   x: JSON.stringify(this.x),
+        //   newX: JSON.stringify(newX),
+        //   potencialMovementX: JSON.stringify(this.potencialMovementX),
+        //   potencialMovementXDGrid: JSON.stringify(
+        //     this.potencialMovementX / backgroundService.gridSize
+        //   ),
+        //   resto: JSON.stringify(
+        //     this.potencialMovementX % backgroundService.gridSize
+        //   ),
+        // };
+        // if (newX != this.x) {
+        //   console.table(pepe);
+        //   this.x = newX;
+        //   this.potencialMovementX =
+        //     (this.potencialMovementX * 2) % backgroundService.gridSize;
+        // }
+        // if (newY != this.y) {
+        //   this.y = newY;
+        //   this.potencialMovementY = 0;
+        // }
       } else {
-        this.x = this.x - xmovement;
-        this.y = this.y - ymovement;
+        this.x = this.x + xmovement;
+        this.y = this.y + ymovement;
       }
     }
   }

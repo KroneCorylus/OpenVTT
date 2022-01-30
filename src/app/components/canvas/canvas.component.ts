@@ -162,8 +162,20 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
       this.render();
     }
     if (this.isDraggingMap) {
-      console.log('is dragging');
       this.pan(event.offsetX, event.offsetY);
+      console.log(
+        'panning',
+        this.xPan,
+        (((this.xPan % this.backgroundService.gridSize) %
+          this.backgroundService.gridSize) +
+          this.backgroundService.gridSize) %
+          this.backgroundService.gridSize,
+        this.yPan,
+        (((this.yPan % this.backgroundService.gridSize) %
+          this.backgroundService.gridSize) +
+          this.backgroundService.gridSize) %
+          this.backgroundService.gridSize
+      );
     }
   }
   private mouseUp(event: MouseEvent) {
@@ -175,6 +187,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
     }
     if (this.isDraggingElement) {
       this.isDraggingElement = false;
+      if (this.selectedElement) {
+        this.selectedElement.potencialMovementX = 0;
+        this.selectedElement.potencialMovementY = 0;
+      }
     }
     if (this.isDraggingMap) {
       this.isDraggingMap = false;
