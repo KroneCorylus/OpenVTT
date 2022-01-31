@@ -13,6 +13,8 @@ import {
 } from '@angular/core';
 import { BackgroundService } from 'src/app/services/background.service';
 import { ANCHOR_CONFIG } from 'src/app/components/const/anchor.config';
+import { ResizableObject } from 'src/app/models/resizable-object.model';
+import { Point } from 'src/app/models/point.model';
 
 @Component({
   selector: 'app-canvas',
@@ -29,13 +31,15 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
   context!: CanvasRenderingContext2D;
   lastX?: number;
   lastY?: number;
+  dragOffset: Point = new Point(0, 0);
+  gridOffset: Point = new Point(0, 0);
   AnchorPulled: string | undefined;
 
   @Input()
   zArray: any[] = [];
   @Output() zArrayChange = new EventEmitter<any[]>();
 
-  selectedElement: any;
+  selectedElement: ResizableObject | undefined;
   isDraggingMap: boolean = false;
   zoomValue: number = 1;
   xPan = 0;
@@ -67,6 +71,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
     this.resizeCanvasToDisplaySize();
     this.canvas.addEventListener('mousedown', this.mouseDown.bind(this), false);
     this.canvas.addEventListener('mousemove', this.mouseDrag.bind(this), false);
+    this.canvas.addEventListener('mouseout', this.mouseOut.bind(this), false);
     this.canvas.addEventListener('mouseup', this.mouseUp.bind(this), false);
     this.canvas.addEventListener('wheel', this.wheelEvent.bind(this), false);
     document.addEventListener('keypress', this.keyPress.bind(this), false);
@@ -90,6 +95,8 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
         );
       }
       if (anchor) {
+        this.selectedElement!.potencialMovementX = 0;
+        this.selectedElement!.potencialMovementY = 0;
         this.lastX = event.offsetX;
         this.lastY = event.offsetY;
         this.AnchorPulled = anchor;
@@ -118,6 +125,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
         this.lastX = event.offsetX;
         this.lastY = event.offsetY;
         this.isDraggingElement = true;
+        this.dragOffset.set(
+          event.offsetX - this.selectedElement.x,
+          event.offsetY - this.selectedElement.y
+        );
       } else {
         this.isDraggingElement = false;
       }
@@ -129,10 +140,16 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
       this.lastY = event.offsetY;
     }
   }
+
+  private mouseOut(event: MouseEvent) {
+    this.selectedElement = undefined;
+    this.isDraggingElement = false;
+    this.isDraggingMap = false;
+  }
   private mouseDrag(event: MouseEvent) {
     if (this.AnchorPulled && this.lastX && this.lastY) {
       console.log('Pulling Anchor', event);
-      this.selectedElement.resizeElement(
+      this.selectedElement!.resizeElement(
         this.AnchorPulled,
         this.lastX,
         this.lastY,
@@ -148,21 +165,38 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
     }
     if (this.isDraggingElement && this.lastX && this.lastY) {
       console.log('Draging element', event);
-      this.selectedElement.moveElement(
-        this.lastX,
-        this.lastY,
-        event.offsetX,
-        event.offsetY,
-        this.backgroundService,
-        this.xPan,
-        this.yPan
-      );
+
+      if (this.backgroundService.snapToGrid) {
+        this.selectedElement?.snapToGrid(
+          this.dragOffset,
+          new Point(event.offsetX, event.offsetY),
+          this.gridOffset,
+          this.backgroundService.gridSize
+        );
+      } else {
+        this.selectedElement!.moveElement(
+          this.dragOffset,
+          new Point(event.offsetX, event.offsetY)
+        );
+      }
       this.lastX = event.offsetX;
       this.lastY = event.offsetY;
       this.render();
     }
     if (this.isDraggingMap) {
       this.pan(event.offsetX, event.offsetY);
+      var gridOffsetX =
+        (((this.xPan % this.backgroundService.gridSize) %
+          this.backgroundService.gridSize) +
+          this.backgroundService.gridSize) %
+        this.backgroundService.gridSize;
+      var gridOffsetY =
+        (((this.yPan % this.backgroundService.gridSize) %
+          this.backgroundService.gridSize) +
+          this.backgroundService.gridSize) %
+        this.backgroundService.gridSize;
+      this.gridOffset.set(gridOffsetX, gridOffsetY);
+
       console.log(
         'panning',
         this.xPan,

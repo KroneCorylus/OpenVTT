@@ -1,4 +1,5 @@
 import { ɵɵsetComponentScope } from '@angular/core';
+import { Point } from './point.model';
 
 export class ResizableObject {
   constructor(params: any) {
@@ -94,6 +95,7 @@ export class ResizableObject {
       y <= this.y + this.height
     );
   }
+
   public resizeElement(
     AnchorPulled: string,
     lastX: number,
@@ -104,6 +106,18 @@ export class ResizableObject {
     xPan: number,
     yPan: number
   ) {
+    console.log(
+      AnchorPulled,
+      lastX,
+      lastY,
+      x,
+      y,
+      xPan,
+      yPan,
+      this.potencialMovementX,
+      this.potencialMovementY,
+      backgroundService.snapToGrid
+    );
     if (lastX && lastY) {
       var xmovement = lastX - x;
       var ymovement = lastY - y;
@@ -244,89 +258,30 @@ export class ResizableObject {
       }
     }
   }
-  public moveElement(
-    lastX: number,
-    lastY: number,
-    x: number,
-    y: number,
-    backgroundService: any,
-    xPan: number,
-    yPan: number
+
+  public snapToGrid(
+    dragOffset: Point,
+    mousePos: Point,
+    gridOffset: Point,
+    gridSize: number
   ) {
-    if (lastX && lastY) {
-      var xmovement = x - lastX;
-      var ymovement = y - lastY;
-      if (backgroundService.snapToGrid) {
-        const gridOffsetX =
-          (((xPan % backgroundService.gridSize) % backgroundService.gridSize) +
-            backgroundService.gridSize) %
-          backgroundService.gridSize;
-        const gridOffsetY =
-          (((yPan % backgroundService.gridSize) % backgroundService.gridSize) +
-            backgroundService.gridSize) %
-          backgroundService.gridSize;
-        var newX =
-          Math.round(x / backgroundService.gridSize) *
-            backgroundService.gridSize +
-          gridOffsetX;
-        var newY =
-          Math.round(y / backgroundService.gridSize) *
-            backgroundService.gridSize +
-          gridOffsetY;
+    var newX =
+      Math.round((mousePos.x - dragOffset.x) / gridSize) * gridSize +
+      gridOffset.x;
+    var newY =
+      Math.round((mousePos.y - dragOffset.y) / gridSize) * gridSize +
+      gridOffset.y;
 
-        if (newX != this.x) {
-          this.x = newX;
-        }
-        if (newY != this.y) {
-          this.y = newY;
-        }
-        // if (newX != this.x) {
-        //   this.x = newX;
-        // }
-
-        // var newX =
-        //   Math.round(
-        //     (this.x -
-        //       (xPan % backgroundService.gridSize) -
-        //       this.potencialMovementX) /
-        //       backgroundService.gridSize
-        //   ) *
-        //     backgroundService.gridSize +
-        //   (xPan % backgroundService.gridSize);
-        // var newY =
-        //   Math.round(
-        //     (this.y -
-        //       (yPan % backgroundService.gridSize) -
-        //       this.potencialMovementY) /
-        //       backgroundService.gridSize
-        //   ) *
-        //     backgroundService.gridSize +
-        //   (yPan % backgroundService.gridSize);
-        // var pepe = {
-        //   x: JSON.stringify(this.x),
-        //   newX: JSON.stringify(newX),
-        //   potencialMovementX: JSON.stringify(this.potencialMovementX),
-        //   potencialMovementXDGrid: JSON.stringify(
-        //     this.potencialMovementX / backgroundService.gridSize
-        //   ),
-        //   resto: JSON.stringify(
-        //     this.potencialMovementX % backgroundService.gridSize
-        //   ),
-        // };
-        // if (newX != this.x) {
-        //   console.table(pepe);
-        //   this.x = newX;
-        //   this.potencialMovementX =
-        //     (this.potencialMovementX * 2) % backgroundService.gridSize;
-        // }
-        // if (newY != this.y) {
-        //   this.y = newY;
-        //   this.potencialMovementY = 0;
-        // }
-      } else {
-        this.x = this.x + xmovement;
-        this.y = this.y + ymovement;
-      }
+    if (newX != this.x) {
+      this.x = newX;
     }
+    if (newY != this.y) {
+      this.y = newY;
+    }
+  }
+
+  public moveElement(dragOffset: Point, mousePos: Point) {
+    this.x = mousePos.x - dragOffset.x;
+    this.y = mousePos.y - dragOffset.y;
   }
 }
