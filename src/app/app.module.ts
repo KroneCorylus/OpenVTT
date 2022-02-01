@@ -14,6 +14,7 @@ import { ToolOptionsComponent } from './components/tool-options/tool-options.com
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { FormsModule } from '@angular/forms';
 import { BackgroundService } from './services/background.service';
+import { NgxColorsModule } from 'ngx-colors';
 @NgModule({
   declarations: [
     AppComponent,
@@ -31,6 +32,7 @@ import { BackgroundService } from './services/background.service';
     MatTooltipModule,
     MatDialogModule,
     MatCheckboxModule,
+    NgxColorsModule,
   ],
   providers: [BackgroundService],
   bootstrap: [AppComponent],

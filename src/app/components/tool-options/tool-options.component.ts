@@ -18,6 +18,8 @@ import { BackgroundService } from 'src/app/services/background.service';
 export class ToolOptionsComponent implements OnInit {
   constructor(public backgroundService: BackgroundService) {}
 
+  selectedColor: string = '#c32af3';
+
   @ViewChild('imageUploader', { static: false })
   imageUploader!: ElementRef<HTMLCanvasElement>;
 

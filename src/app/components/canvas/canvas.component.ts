@@ -33,7 +33,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
   lastY?: number;
   dragOffset: Point = new Point(0, 0);
   gridOffset: Point = new Point(0, 0);
-  AnchorPulled: string | undefined;
+  anchorPulled: string | undefined;
 
   @Input()
   zArray: any[] = [];
@@ -70,7 +70,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
   private initCanvas() {
     this.resizeCanvasToDisplaySize();
     this.canvas.addEventListener('mousedown', this.mouseDown.bind(this), false);
-    this.canvas.addEventListener('mousemove', this.mouseDrag.bind(this), false);
+    this.canvas.addEventListener('mousemove', this.mouseMove.bind(this), false);
     this.canvas.addEventListener('mouseout', this.mouseOut.bind(this), false);
     this.canvas.addEventListener('mouseup', this.mouseUp.bind(this), false);
     this.canvas.addEventListener('wheel', this.wheelEvent.bind(this), false);
@@ -84,31 +84,63 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
 
   //Events
 
+  //Events Handlers
   private mouseDown(event: MouseEvent) {
-    console.log(this.zArray);
+    console.log(this.selectedElement);
+    //Left Click
     if (event.button === 0) {
-      var anchor;
+      var anchor = undefined;
+      //Check if we have an element selected
       if (this.selectedElement) {
         anchor = this.selectedElement.getClickedAnchor(
           event.offsetX,
           event.offsetY
         );
+        //Check if we clicked on an anchor
+        if (anchor) {
+          //#borrar
+          this.selectedElement!.potencialMovementX = 0;
+          this.selectedElement!.potencialMovementY = 0;
+          //#borrar
+          this.lastX = event.offsetX;
+          this.lastY = event.offsetY;
+          this.anchorPulled = anchor;
+        }
+        //Check if we clicked on the selected element
+        else if (
+          this.selectedElement.ContainsPoint({
+            x: event.offsetX,
+            y: event.offsetY,
+          })
+        ) {
+          this.lastX = event.offsetX;
+          this.lastY = event.offsetY;
+          this.isDraggingElement = true;
+          this.dragOffset.set(
+            event.offsetX - this.selectedElement.x,
+            event.offsetY - this.selectedElement.y
+          );
+        } else {
+          this.selectedElement = undefined;
+        }
       }
-      if (anchor) {
-        this.selectedElement!.potencialMovementX = 0;
-        this.selectedElement!.potencialMovementY = 0;
-        this.lastX = event.offsetX;
-        this.lastY = event.offsetY;
-        this.AnchorPulled = anchor;
-      } else {
-        console.log('searching for element on click');
+      //If there is no element selected
+      if (!this.selectedElement) {
+        console.log('Search element on click');
         var first = false;
         for (let i = this.zArray.length - 1; i >= 0; i--) {
-          const element = this.zArray[i];
+          const element: ResizableObject = this.zArray[i];
           this.drawGrid();
-          if (element.isInBounds(event.offsetX, event.offsetY)) {
+          if (element.ContainsPoint({ x: event.offsetX, y: event.offsetY })) {
             if (!first) {
               this.selectedElement = element;
+              this.lastX = event.offsetX;
+              this.lastY = event.offsetY;
+              this.isDraggingElement = true;
+              this.dragOffset.set(
+                event.offsetX - element.x,
+                event.offsetY - element.y
+              );
             }
             element.selected = first ? false : true;
             first = true;
@@ -118,21 +150,8 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
         }
         this.render();
       }
-      if (
-        this.selectedElement &&
-        this.selectedElement.isInBounds(event.offsetX, event.offsetY)
-      ) {
-        this.lastX = event.offsetX;
-        this.lastY = event.offsetY;
-        this.isDraggingElement = true;
-        this.dragOffset.set(
-          event.offsetX - this.selectedElement.x,
-          event.offsetY - this.selectedElement.y
-        );
-      } else {
-        this.isDraggingElement = false;
-      }
     }
+    //Middle Click
     if (event.button === 1) {
       console.log('mouseDown middle ?', event);
       this.isDraggingMap = true;
@@ -146,11 +165,12 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
     this.isDraggingElement = false;
     this.isDraggingMap = false;
   }
-  private mouseDrag(event: MouseEvent) {
-    if (this.AnchorPulled && this.lastX && this.lastY) {
+
+  private mouseMove(event: MouseEvent) {
+    if (this.anchorPulled && this.lastX && this.lastY) {
       console.log('Pulling Anchor', event);
       this.selectedElement!.resizeElement(
-        this.AnchorPulled,
+        this.anchorPulled,
         this.lastX,
         this.lastY,
         event.offsetX,
@@ -214,8 +234,8 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
   }
   private mouseUp(event: MouseEvent) {
     console.log('mouseUp', event);
-    if (this.AnchorPulled) {
-      this.AnchorPulled = undefined;
+    if (this.anchorPulled) {
+      this.anchorPulled = undefined;
       this.lastX = undefined;
       this.lastY = undefined;
     }

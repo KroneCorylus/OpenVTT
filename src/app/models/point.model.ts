@@ -5,6 +5,7 @@ export class Point {
   }
   public x: number;
   public y: number;
+
   public set(x: number, y: number) {
     this.x = x;
     this.y = y;
@@ -12,5 +13,13 @@ export class Point {
   public clear() {
     this.x = 0;
     this.y = 0;
+  }
+  public isInBounds(topLeft: Point, bottomRight: Point): boolean {
+    return (
+      this.x >= topLeft.x &&
+      this.x <= bottomRight.x &&
+      this.y >= topLeft.y &&
+      this.y <= bottomRight.y
+    );
   }
 }
