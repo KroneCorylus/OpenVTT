@@ -1,3 +1,4 @@
+import { NgStyle } from '@angular/common';
 import { ɵɵsetComponentScope } from '@angular/core';
 import { Point } from './point.model';
 
@@ -67,32 +68,32 @@ export class ResizableObject {
       x: this.x + this.width + 10 - 8,
       y: this.y + this.height / 2 - 8,
     });
-    if (topLeft.isInBounds(x, y)) {
+    if (topLeft.ContainsPoint({ x, y })) {
       return 'topLeft';
-    } else if (topRight.isInBounds(x, y)) {
+    } else if (topRight.ContainsPoint({ x, y })) {
       return 'topRight';
-    } else if (bottomLeft.isInBounds(x, y)) {
+    } else if (bottomLeft.ContainsPoint({ x, y })) {
       return 'bottomLeft';
-    } else if (bottomRight.isInBounds(x, y)) {
+    } else if (bottomRight.ContainsPoint({ x, y })) {
       return 'bottomRight';
-    } else if (top.isInBounds(x, y)) {
+    } else if (top.ContainsPoint({ x, y })) {
       return 'top';
-    } else if (bottom.isInBounds(x, y)) {
+    } else if (bottom.ContainsPoint({ x, y })) {
       return 'bottom';
-    } else if (left.isInBounds(x, y)) {
+    } else if (left.ContainsPoint({ x, y })) {
       return 'left';
-    } else if (right.isInBounds(x, y)) {
+    } else if (right.ContainsPoint({ x, y })) {
       return 'right';
     } else {
       return undefined;
     }
   }
-  public isInBounds(x: number, y: number) {
+  public ContainsPoint(point: { x: number; y: number }): boolean {
     return (
-      x >= this.x &&
-      x <= this.x + this.width &&
-      y >= this.y &&
-      y <= this.y + this.height
+      point.x >= this.x &&
+      point.x <= this.x + this.width &&
+      point.y >= this.y &&
+      point.y <= this.y + this.height
     );
   }
 
