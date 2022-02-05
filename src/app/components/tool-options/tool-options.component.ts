@@ -45,8 +45,8 @@ export class ToolOptionsComponent implements OnInit {
         var bg = new ImageObject({
           height: -1,
           width: -1,
-          x: 0,
-          y: 0,
+          x: 450,
+          y: 225,
           selected: false,
           element: new window.Image(),
           url: event.target.result,

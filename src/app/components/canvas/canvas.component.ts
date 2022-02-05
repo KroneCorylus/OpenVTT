@@ -105,6 +105,11 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
           this.lastX = event.offsetX;
           this.lastY = event.offsetY;
           this.anchorPulled = anchor;
+          this.dragOffset.set(
+            event.offsetX - this.selectedElement.x,
+            event.offsetY - this.selectedElement.y
+          );
+          console.log(this.dragOffset);
         }
         //Check if we clicked on the selected element
         else if (
@@ -164,21 +169,30 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
     this.selectedElement = undefined;
     this.isDraggingElement = false;
     this.isDraggingMap = false;
+    this.dragOffset.set(0, 0);
   }
 
   private mouseMove(event: MouseEvent) {
     if (this.anchorPulled && this.lastX && this.lastY) {
       console.log('Pulling Anchor', event);
-      this.selectedElement!.resizeElement(
-        this.anchorPulled,
-        this.lastX,
-        this.lastY,
-        event.offsetX,
-        event.offsetY,
-        this.backgroundService,
-        this.xPan,
-        this.yPan
-      );
+      if (this.backgroundService.snapToGrid) {
+        this.selectedElement?.resizeSnapToGrid(
+          this.dragOffset,
+          new Point(event.offsetX, event.offsetY),
+          this.gridOffset,
+          this.backgroundService.gridSize,
+          this.anchorPulled
+        );
+      } else {
+        this.selectedElement!.resizeElement(
+          this.anchorPulled,
+          this.lastX,
+          this.lastY,
+          event.offsetX,
+          event.offsetY
+        );
+      }
+
       this.lastX = event.offsetX;
       this.lastY = event.offsetY;
       this.render();
@@ -234,6 +248,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
   }
   private mouseUp(event: MouseEvent) {
     console.log('mouseUp', event);
+    this.dragOffset.set(0, 0);
     if (this.anchorPulled) {
       this.anchorPulled = undefined;
       this.lastX = undefined;

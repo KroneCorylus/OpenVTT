@@ -1,6 +1,5 @@
-import { NgStyle } from '@angular/common';
-import { ɵɵsetComponentScope } from '@angular/core';
 import { Point } from './point.model';
+import { ANCHOR_CONFIG } from 'src/app/components/const/anchor.config';
 
 export class ResizableObject {
   constructor(params: any) {
@@ -97,165 +96,141 @@ export class ResizableObject {
     );
   }
 
+  public resizeSnapToGrid(
+    dragOffset: Point,
+    mousePos: Point,
+    gridOffset: Point,
+    gridSize: number,
+    AnchorPulled: string
+  ) {
+    var ratio = this.width / this.height;
+    var deltaX = this.x - mousePos.x;
+    var deltaY = this.y - mousePos.y;
+    var newWidth = this.width;
+    var newHeight = this.height;
+    var newX = this.x;
+    var newY = this.y;
+    var deltaX = mousePos.x - dragOffset.x;
+    var deltaY = mousePos.y - dragOffset.y;
+    switch (AnchorPulled) {
+      case 'topLeft':
+        newX = Math.round(deltaX / gridSize) * gridSize;
+        newWidth =
+          Math.round((this.x - deltaX + this.width) / gridSize) * gridSize +
+          gridOffset.x;
+        newHeight = newWidth / ratio;
+        newY = this.y + (this.width - newWidth);
+        break;
+      case 'topRight':
+        newWidth =
+          Math.round((mousePos.x - this.x) / gridSize) * gridSize +
+          gridOffset.x;
+        newHeight = newWidth / ratio;
+        newY = this.y + (this.width - newWidth);
+        break;
+      case 'bottomLeft':
+        newX = Math.round(deltaX / gridSize) * gridSize;
+        newWidth =
+          Math.round((this.x - deltaX + this.width) / gridSize) * gridSize +
+          gridOffset.x;
+        newHeight = newWidth / ratio;
+        break;
+      case 'bottomRight':
+        newWidth =
+          Math.round((mousePos.x - this.x) / gridSize) * gridSize +
+          gridOffset.x;
+        newHeight = newWidth / ratio;
+        break;
+      case 'top':
+        newY = Math.round(deltaY / gridSize) * gridSize;
+        newHeight =
+          Math.round((this.y - deltaY + this.height) / gridSize) * gridSize +
+          gridOffset.y;
+        break;
+      case 'bottom':
+        newHeight =
+          Math.round((mousePos.y - this.y) / gridSize) * gridSize +
+          gridOffset.y;
+        break;
+      case 'left':
+        newX = Math.round(deltaX / gridSize) * gridSize;
+        newWidth =
+          Math.round((this.x - deltaX + this.width) / gridSize) * gridSize +
+          gridOffset.x;
+        break;
+      case 'right':
+        newWidth =
+          Math.round((mousePos.x - this.x) / gridSize) * gridSize +
+          gridOffset.x;
+        break;
+      default:
+        break;
+    }
+    // var newWidth =
+    //   Math.round((mousePos.x - dragOffset.x) / gridSize) * gridSize +
+    //   gridOffset.x;
+    // var newHeight =
+    //   Math.round((mousePos.y - dragOffset.y) / gridSize) * gridSize +
+    //   gridOffset.y;
+
+    if (newWidth != this.width) {
+      this.width = newWidth;
+      this.x = newX;
+    }
+    if (newHeight != this.height) {
+      this.height = newHeight;
+      this.y = newY;
+    }
+  }
+
   public resizeElement(
     AnchorPulled: string,
     lastX: number,
     lastY: number,
     x: number,
-    y: number,
-    backgroundService: any,
-    xPan: number,
-    yPan: number
+    y: number
   ) {
-    console.log(
-      AnchorPulled,
-      lastX,
-      lastY,
-      x,
-      y,
-      xPan,
-      yPan,
-      this.potencialMovementX,
-      this.potencialMovementY,
-      backgroundService.snapToGrid
-    );
     if (lastX && lastY) {
       var xmovement = lastX - x;
       var ymovement = lastY - y;
       var ratio = this.width / this.height;
-      if (backgroundService.snapToGrid) {
-        this.potencialMovementX = this.potencialMovementX + xmovement;
-        this.potencialMovementY = this.potencialMovementY + ymovement;
-        var newX =
-          Math.round(
-            (this.x -
-              (xPan % backgroundService.gridSize) -
-              this.potencialMovementX) /
-              backgroundService.gridSize
-          ) *
-            backgroundService.gridSize +
-          (xPan % backgroundService.gridSize);
-
-        var newY =
-          Math.round(
-            (this.y -
-              (yPan % backgroundService.gridSize) -
-              this.potencialMovementY) /
-              backgroundService.gridSize
-          ) *
-            backgroundService.gridSize +
-          (yPan % backgroundService.gridSize);
-        var deltaX = this.x - newX;
-        var deltaY = this.y - newY;
-        switch (AnchorPulled) {
-          case 'topLeft':
-            if (newX != this.x) {
-              this.width = this.width + deltaX;
-              this.height = this.width / ratio;
-              this.y = this.y - deltaX;
-              this.x = newX;
-              this.potencialMovementX = 0;
-              this.potencialMovementY = 0;
-            }
-            break;
-          case 'topRight':
-            if (newX != this.x) {
-              this.width = this.width - deltaX;
-              this.height = this.width / ratio;
-              this.y = this.y + deltaX;
-              this.potencialMovementX = 0;
-              this.potencialMovementY = 0;
-            }
-            break;
-          case 'bottomLeft':
-            if (newX != this.x) {
-              this.width = this.width + deltaX;
-              this.height = this.width / ratio;
-              this.x = this.x - deltaX;
-              this.potencialMovementX = 0;
-              this.potencialMovementY = 0;
-            }
-            break;
-          case 'bottomRight':
-            if (newX != this.x) {
-              this.width = this.width - deltaX;
-              this.height = this.width / ratio;
-              this.potencialMovementX = 0;
-              this.potencialMovementY = 0;
-            }
-            break;
-          case 'top':
-            if (newY != this.y) {
-              this.height = this.height + deltaY;
-              this.y = this.y - deltaY;
-              this.potencialMovementX = 0;
-              this.potencialMovementY = 0;
-            }
-            break;
-          case 'bottom':
-            if (newY != this.y) {
-              this.height = this.height - deltaY;
-              this.potencialMovementX = 0;
-              this.potencialMovementY = 0;
-            }
-            break;
-          case 'left':
-            if (newX != this.x) {
-              this.width = this.width + deltaX;
-              this.x = this.x - deltaX;
-              this.potencialMovementX = 0;
-              this.potencialMovementY = 0;
-            }
-            break;
-          case 'right':
-            if (newX != this.x) {
-              this.width = this.width - deltaX;
-              this.potencialMovementX = 0;
-              this.potencialMovementY = 0;
-            }
-            break;
-          default:
-            break;
-        }
-      } else {
-        switch (AnchorPulled) {
-          case 'topLeft':
-            this.width = this.width + xmovement;
-            this.height = this.width / ratio;
-            this.x = this.x - xmovement;
-            this.y = this.y - xmovement;
-            break;
-          case 'topRight':
-            this.width = this.width - xmovement;
-            this.height = this.width / ratio;
-            this.y = this.y + xmovement;
-            break;
-          case 'bottomLeft':
-            this.width = this.width + xmovement;
-            this.height = this.width / ratio;
-            this.x = this.x - xmovement;
-            break;
-          case 'bottomRight':
-            this.width = this.width - xmovement;
-            this.height = this.width / ratio;
-            break;
-          case 'top':
-            this.height = this.height + ymovement;
-            this.y = this.y - ymovement;
-            break;
-          case 'bottom':
-            this.height = this.height - ymovement;
-            break;
-          case 'left':
-            this.width = this.width + xmovement;
-            this.x = this.x - xmovement;
-            break;
-          case 'right':
-            this.width = this.width - xmovement;
-            break;
-          default:
-            break;
-        }
+      switch (AnchorPulled) {
+        case 'topLeft':
+          this.width = this.width + xmovement;
+          this.height = this.width / ratio;
+          this.x = this.x - xmovement;
+          this.y = this.y - xmovement;
+          break;
+        case 'topRight':
+          this.width = this.width - xmovement;
+          this.height = this.width / ratio;
+          this.y = this.y + xmovement;
+          break;
+        case 'bottomLeft':
+          this.width = this.width + xmovement;
+          this.height = this.width / ratio;
+          this.x = this.x - xmovement;
+          break;
+        case 'bottomRight':
+          this.width = this.width - xmovement;
+          this.height = this.width / ratio;
+          break;
+        case 'top':
+          this.height = this.height + ymovement;
+          this.y = this.y - ymovement;
+          break;
+        case 'bottom':
+          this.height = this.height - ymovement;
+          break;
+        case 'left':
+          this.width = this.width + xmovement;
+          this.x = this.x - xmovement;
+          break;
+        case 'right':
+          this.width = this.width - xmovement;
+          break;
+        default:
+          break;
       }
     }
   }
