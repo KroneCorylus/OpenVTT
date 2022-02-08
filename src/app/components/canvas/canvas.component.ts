@@ -15,6 +15,7 @@ import { BackgroundService } from 'src/app/services/background.service';
 import { ANCHOR_CONFIG } from 'src/app/components/const/anchor.config';
 import { ResizableObject } from 'src/app/models/resizable-object.model';
 import { Point } from 'src/app/models/point.model';
+import { SharedService } from 'src/app/services/shared.service';
 
 @Component({
   selector: 'openvtt-canvas',
@@ -23,7 +24,10 @@ import { Point } from 'src/app/models/point.model';
 })
 export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
   isDraggingElement: boolean = false;
-  constructor(public backgroundService: BackgroundService) {}
+  constructor(
+    public backgroundService: BackgroundService,
+    public sharedService: SharedService
+  ) {}
 
   @ViewChild('layer1', { static: true })
   canvasElementRef!: ElementRef<HTMLCanvasElement>;
@@ -127,6 +131,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
           );
         } else {
           this.selectedElement = undefined;
+          this.sharedService.selectedObject = undefined;
         }
       }
       //If there is no element selected
@@ -139,6 +144,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
           if (element.ContainsPoint({ x: event.offsetX, y: event.offsetY })) {
             if (!first) {
               this.selectedElement = element;
+              this.sharedService.selectedObject = element;
               this.lastX = event.offsetX;
               this.lastY = event.offsetY;
               this.isDraggingElement = true;
@@ -167,6 +173,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
 
   private mouseOut(event: MouseEvent) {
     this.selectedElement = undefined;
+    // this.sharedService.selectedObject = undefined;
     this.isDraggingElement = false;
     this.isDraggingMap = false;
     this.dragOffset.set(0, 0);
@@ -315,6 +322,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
     const index = this.zArray.indexOf(element);
     this.zArray.splice(index, 1);
     this.selectedElement = undefined;
+    this.sharedService.selectedObject = undefined;
     this.zArrayChange.emit(this.zArray);
     this.render();
   }

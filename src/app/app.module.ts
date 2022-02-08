@@ -17,6 +17,7 @@ import { BackgroundService } from './services/background.service';
 import { NgxColorsModule } from 'ngx-colors';
 import { MatInputModule } from '@angular/material/input';
 import { SelectedDetailsComponent } from './components/selected-details/selected-details.component';
+import { SharedService } from './services/shared.service';
 @NgModule({
   declarations: [
     AppComponent,
@@ -38,7 +39,7 @@ import { SelectedDetailsComponent } from './components/selected-details/selected
     NgxColorsModule,
     MatInputModule,
   ],
-  providers: [BackgroundService],
+  providers: [BackgroundService, SharedService],
   bootstrap: [AppComponent],
 })
 export class AppModule {}

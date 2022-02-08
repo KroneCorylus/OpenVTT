@@ -1,1 +1,24 @@
-<p>selected-details works!</p>
+<ng-container *ngIf="sharedService.selectedObject">
+  <div class="selected-details" [@inOutAnimation]="animation">
+    <div class="detail-numeric-selector z3">
+      <div class="detail-label">Width</div>
+      <input type="number" [(ngModel)]="sharedService.selectedObject.width" />
+    </div>
+    <div class="detail-numeric-selector z1">
+      <div class="detail-label">Height</div>
+      <input type="number" [(ngModel)]="sharedService.selectedObject.height" />
+    </div>
+    <div class="detail-numeric-selector z1">
+      <div class="detail-label">X</div>
+      <input type="number" [(ngModel)]="sharedService.selectedObject.x" />
+    </div>
+    <div class="detail-numeric-selector z1">
+      <div class="detail-label">Y</div>
+      <input type="number" [(ngModel)]="sharedService.selectedObject.y" />
+    </div>
+    <div class="detail-numeric-selector z1">
+      <div class="detail-label">Rotation</div>
+      <input type="number" value="0" />
+    </div>
+  </div>
+</ng-container>
