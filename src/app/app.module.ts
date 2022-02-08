@@ -15,6 +15,8 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { FormsModule } from '@angular/forms';
 import { BackgroundService } from './services/background.service';
 import { NgxColorsModule } from 'ngx-colors';
+import { MatInputModule } from '@angular/material/input';
+import { SelectedDetailsComponent } from './components/selected-details/selected-details.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -22,6 +24,7 @@ import { NgxColorsModule } from 'ngx-colors';
     ToolbarComponent,
     SidebarComponent,
     ToolOptionsComponent,
+    SelectedDetailsComponent,
   ],
   imports: [
     BrowserModule,
@@ -33,6 +36,7 @@ import { NgxColorsModule } from 'ngx-colors';
     MatDialogModule,
     MatCheckboxModule,
     NgxColorsModule,
+    MatInputModule,
   ],
   providers: [BackgroundService],
   bootstrap: [AppComponent],
