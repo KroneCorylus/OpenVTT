@@ -17,7 +17,7 @@ import { ResizableObject } from 'src/app/models/resizable-object.model';
 import { Point } from 'src/app/models/point.model';
 
 @Component({
-  selector: 'app-canvas',
+  selector: 'openvtt-canvas',
   templateUrl: './canvas.component.html',
   styleUrls: ['./canvas.component.scss'],
 })
