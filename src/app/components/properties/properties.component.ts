@@ -24,9 +24,9 @@ import { ResizableObject } from 'src/app/models/resizable-object.model';
 import { SharedService } from 'src/app/services/shared.service';
 
 @Component({
-  selector: 'openvtt-selected-details',
-  templateUrl: './selected-details.component.html',
-  styleUrls: ['./selected-details.component.scss'],
+  selector: 'openvtt-properties',
+  templateUrl: './properties.component.html',
+  styleUrls: ['./properties.component.scss'],
   animations: [
     trigger('inOutAnimation', [
       transition('* => slide', [
@@ -55,7 +55,7 @@ import { SharedService } from 'src/app/services/shared.service';
     ]),
   ],
 })
-export class SelectedDetailsComponent implements OnInit {
+export class PropertiesComponent implements OnInit {
   constructor(
     public sharedService: SharedService,
     private _formBuilder: FormBuilder

@@ -16,7 +16,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { BackgroundService } from './services/background.service';
 import { NgxColorsModule } from 'ngx-colors';
 import { MatInputModule } from '@angular/material/input';
-import { SelectedDetailsComponent } from './components/selected-details/selected-details.component';
+import { PropertiesComponent } from './components/properties/properties.component';
 import { SharedService } from './services/shared.service';
 
 @NgModule({
@@ -26,7 +26,7 @@ import { SharedService } from './services/shared.service';
     ToolbarComponent,
     SidebarComponent,
     ToolOptionsComponent,
-    SelectedDetailsComponent,
+    PropertiesComponent,
   ],
   imports: [
     BrowserModule,
