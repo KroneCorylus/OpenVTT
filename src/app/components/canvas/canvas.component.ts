@@ -54,6 +54,10 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
   ngOnInit(): void {
     this.canvas = this.canvasElementRef.nativeElement;
     this.context = this.canvas.getContext('2d')!;
+    this.sharedService.render.subscribe((changes) => {
+      console.log('render', changes);
+      this.render();
+    });
     // this.addImage();
   }
 
@@ -90,7 +94,11 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
 
   //Events Handlers
   private mouseDown(event: MouseEvent) {
-    console.log(this.selectedElement);
+    console.log('mouseDown this.selectedElement', this.selectedElement);
+    console.log(
+      'mouseDown this.sharedService.selectedObject',
+      this.selectedElement
+    );
     //Left Click
     if (event.button === 0) {
       var anchor = undefined;
@@ -442,6 +450,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
     this.drawGrid();
     if (this.selectedElement) {
       this.drawAnchors(this.selectedElement);
+    }
+    if (this.selectedElement) {
+      this.sharedService.onSelectedObjectChanges.next(this.selectedElement);
     }
   }
 }

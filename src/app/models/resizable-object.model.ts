@@ -1,5 +1,6 @@
 import { Point } from './point.model';
 import { ANCHOR_CONFIG } from 'src/app/components/const/anchor.config';
+import { ResolveData } from '@angular/router';
 
 export class ResizableObject {
   constructor(params: any) {
@@ -259,5 +260,14 @@ export class ResizableObject {
   public moveElement(dragOffset: Point, mousePos: Point) {
     this.x = mousePos.x - dragOffset.x;
     this.y = mousePos.y - dragOffset.y;
+  }
+
+  public patchValues(params: any) {
+    for (const key in params) {
+      if (this.hasOwnProperty(key)) {
+        const keySan = key as keyof ResizableObject;
+        (this[keySan] as any) = params[keySan];
+      }
+    }
   }
 }

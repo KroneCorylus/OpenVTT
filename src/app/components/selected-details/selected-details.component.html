@@ -1,20 +1,24 @@
 <ng-container *ngIf="sharedService.selectedObject">
-  <div class="selected-details" [@inOutAnimation]="animation">
+  <div
+    class="selected-details"
+    [@inOutAnimation]="animation"
+    [formGroup]="formDetails"
+  >
     <div class="detail-numeric-selector z3">
       <div class="detail-label">Width</div>
-      <input type="number" [(ngModel)]="sharedService.selectedObject.width" />
+      <input type="number" formControlName="widthCtrl" />
     </div>
     <div class="detail-numeric-selector z1">
       <div class="detail-label">Height</div>
-      <input type="number" [(ngModel)]="sharedService.selectedObject.height" />
+      <input type="number" formControlName="heightCtrl" />
     </div>
     <div class="detail-numeric-selector z1">
       <div class="detail-label">X</div>
-      <input type="number" [(ngModel)]="sharedService.selectedObject.x" />
+      <input type="number" formControlName="xCtrl" />
     </div>
     <div class="detail-numeric-selector z1">
       <div class="detail-label">Y</div>
-      <input type="number" [(ngModel)]="sharedService.selectedObject.y" />
+      <input type="number" formControlName="yCtrl" />
     </div>
     <div class="detail-numeric-selector z1">
       <div class="detail-label">Rotation</div>

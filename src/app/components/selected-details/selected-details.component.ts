@@ -7,7 +7,19 @@ import {
   transition,
   trigger,
 } from '@angular/animations';
-import { Component, Input, OnInit } from '@angular/core';
+import {
+  Component,
+  Input,
+  OnChanges,
+  OnInit,
+  SimpleChanges,
+} from '@angular/core';
+import {
+  FormBuilder,
+  FormControl,
+  FormGroup,
+  Validators,
+} from '@angular/forms';
 import { ResizableObject } from 'src/app/models/resizable-object.model';
 import { SharedService } from 'src/app/services/shared.service';
 
@@ -41,56 +53,66 @@ import { SharedService } from 'src/app/services/shared.service';
         ),
       ]),
     ]),
-    trigger('colorsAnimation', [
-      transition('void => slide-in', [
-        // Initially all colors are hidden
-        query(':enter', style({ opacity: 0 }), { optional: true }),
-        //slide-in animation
-        query(
-          ':enter',
-          stagger('200ms', [
-            animate(
-              '.3s ease-in',
-              keyframes([
-                style({ opacity: 0, transform: 'translatex(-50%)', offset: 0 }),
-                style({
-                  opacity: 0.5,
-                  transform: 'translatex(-10px) scale(1.1)',
-                  offset: 0.3,
-                }),
-                style({ opacity: 1, transform: 'translatex(0)', offset: 1 }),
-              ])
-            ),
-          ]),
-          { optional: true }
-        ),
-      ]),
-      //popup animation
-      transition('void => popup', [
-        query(':enter', style({ opacity: 0, transform: 'scale(0)' }), {
-          optional: true,
-        }),
-        query(
-          ':enter',
-          stagger('10ms', [
-            animate(
-              '500ms ease-out',
-              keyframes([
-                style({ opacity: 0.5, transform: 'scale(.5)', offset: 0.3 }),
-                style({ opacity: 1, transform: 'scale(1.1)', offset: 0.8 }),
-                style({ opacity: 1, transform: 'scale(1)', offset: 1 }),
-              ])
-            ),
-          ]),
-          { optional: true }
-        ),
-      ]),
-    ]),
   ],
 })
 export class SelectedDetailsComponent implements OnInit {
-  constructor(public sharedService: SharedService) {}
+  constructor(
+    public sharedService: SharedService,
+    private _formBuilder: FormBuilder
+  ) {}
+
+  formDetails: FormGroup = new FormGroup({});
 
   animation = 'slide';
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    console.log('selectedDetailsComponent.ngOnInit');
+    this.formDetails = this._formBuilder.group({
+      widthCtrl: new FormControl(null),
+      heightCtrl: new FormControl(null),
+      xCtrl: new FormControl(null),
+      yCtrl: new FormControl(null),
+    });
+
+    this.sharedService.onSelectedObjectChanges.subscribe((changes) => {
+      console.log('selectedDetailsComponent.onSelectedObjectChanges', changes);
+      this.patchFormValues(changes);
+    });
+
+    this.formDetails.valueChanges.subscribe((value) => {
+      console.log('changes on form', value);
+      this.sharedService.updateSelected(
+        new ResizableObject({
+          x: value.xCtrl,
+          y: value.yCtrl,
+          width: value.widthCtrl,
+          height: value.heightCtrl,
+        })
+      );
+      this.sharedService.render.next();
+    });
+  }
+
+  private patchFormValues(resizableObject: ResizableObject | undefined) {
+    console.debug('patchFormValues', resizableObject);
+    if (resizableObject) {
+      var changes: any = {};
+      if (resizableObject.width != this.formDetails.controls.widthCtrl.value) {
+        changes.widthCtrl = resizableObject.width;
+      }
+      if (
+        resizableObject.height != this.formDetails.controls.heightCtrl.value
+      ) {
+        changes.heightCtrl = resizableObject.height;
+      }
+      if (resizableObject.x != this.formDetails.controls.xCtrl.value) {
+        changes.xCtrl = resizableObject.x;
+      }
+      if (resizableObject.y != this.formDetails.controls.yCtrl.value) {
+        changes.yCtrl = resizableObject.y;
+      }
+      if (changes && Object.keys(changes).length > 0) {
+        this.formDetails.patchValue(changes);
+      }
+    }
+  }
 }
