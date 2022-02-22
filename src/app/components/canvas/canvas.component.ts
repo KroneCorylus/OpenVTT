@@ -1,6 +1,5 @@
 import {
   AfterViewInit,
-  ChangeDetectionStrategy,
   Component,
   ElementRef,
   EventEmitter,
@@ -23,34 +22,35 @@ import { SharedService } from 'src/app/services/shared.service';
   styleUrls: ['./canvas.component.scss'],
 })
 export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
-  isDraggingElement: boolean = false;
   constructor(
     public backgroundService: BackgroundService,
     public sharedService: SharedService
   ) {}
 
-  @ViewChild('layer1', { static: true })
-  private canvasElementRef!: ElementRef<HTMLCanvasElement>;
-  private canvas!: HTMLCanvasElement;
-  private context!: CanvasRenderingContext2D;
-  private dragOffset: Point = new Point(0, 0);
-  private gridOffset: Point = new Point(0, 0);
-  private panOffset: Point = new Point(0, 0);
-  private mousePos: Point = new Point(0, 0);
-  private anchorPulled: string | undefined;
-
   @Input()
   zArray: any[] = [];
   @Output() zArrayChange = new EventEmitter<any[]>();
 
-  private selectedElement: ResizableObject | undefined;
+  @ViewChild('canvas', { static: true })
+  private canvasElementRef!: ElementRef<HTMLCanvasElement>;
+  private canvas!: HTMLCanvasElement;
+  private context!: CanvasRenderingContext2D;
+
+  private dragOffset: Point = new Point(0, 0);
+  private gridOffset: Point = new Point(0, 0);
+  private panOffset: Point = new Point(0, 0);
+  private mousePos: Point = new Point(0, 0);
+
+  //FLAGS
   private isDraggingMap: boolean = false;
+  private isDraggingElement: boolean = false;
+  private anchorPulled: string | undefined;
+  private selectedElement: ResizableObject | undefined;
 
   ngOnInit(): void {
     this.canvas = this.canvasElementRef.nativeElement;
     this.context = this.canvas.getContext('2d')!;
     this.sharedService.render.subscribe((changes) => {
-      console.log('recibe ORDEN TO RENDER');
       this.render();
     });
   }
@@ -74,6 +74,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
     this.canvas.addEventListener('mouseout', this.mouseOut.bind(this), false);
     this.canvas.addEventListener('mouseup', this.mouseUp.bind(this), false);
     this.canvas.addEventListener('wheel', this.wheelEvent.bind(this), false);
+    this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
     document.addEventListener('keypress', this.keyPress.bind(this), false);
     window.addEventListener(
       'resize',
@@ -82,89 +83,51 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
     );
   }
 
-  //Events
-
-  //Events Handlers
+  /* EVENTS HANDLERS */
   private mouseDown(event: MouseEvent) {
-    const adjustedPoint = this.ScreenToWorld(event.offsetX, event.offsetY);
-    console.log(
-      event.offsetX,
-      event.offsetY,
-      this.sharedService.zoom,
-      this.panOffset
-    );
-    //Left Click
+    // Convert mouse coordinates to world coordinates
+    const wMousePos = this.ScreenToWorld(event.offsetX, event.offsetY);
+
+    // [ LEFT CLICK ]
     if (event.button === 0) {
-      var anchor = undefined;
-      //Check if we have an element selected
-      if (this.selectedElement) {
-        console.log('element selected');
-        // anchor = this.selectedElement.getClickedAnchor(
-        //   adjustedPoint.x,
-        //   adjustedPoint.y
-        // );
-        anchor = this.getClickedAnchor(
-          event.offsetX,
-          event.offsetY,
-          this.selectedElement
-        );
-        //Check if we clicked on an anchor
-        if (anchor) {
-          this.anchorPulled = anchor;
-          this.dragOffset.set(
-            event.offsetX - this.selectedElement.x * this.sharedService.zoom,
-            event.offsetY - this.selectedElement.y * this.sharedService.zoom
-          );
-        }
-        //Check if we clicked on the selected element
-        else if (
-          this.selectedElement.ContainsPoint({
-            x: adjustedPoint.x,
-            y: adjustedPoint.y,
-          })
-        ) {
-          this.isDraggingElement = true;
-          this.dragOffset.set(
-            event.offsetX - this.selectedElement.x * this.sharedService.zoom,
-            event.offsetY - this.selectedElement.y * this.sharedService.zoom
-          );
-        } else {
-          this.selectedElement = undefined;
-          this.sharedService.selectedObject = undefined;
-        }
+      //First check if we have clicked on an anchor from the selected object
+      var anchor = this.getClickedAnchor(
+        event.offsetX,
+        event.offsetY,
+        this.selectedElement
+      );
+      if (anchor) {
+        this.anchorPulled = anchor;
       }
-      //If there is no element selected
-      if (!this.selectedElement) {
-        console.log('no element selected');
-        var first = false;
-        for (let i = this.zArray.length - 1; i >= 0; i--) {
+      // If not, check if we have clicked on an object
+      else {
+        var match = false;
+        for (let i = this.zArray.length - 1; i >= 0 && !match; i--) {
           const element: ResizableObject = this.zArray[i];
-          this.drawGrid();
           if (
             element.ContainsPoint({
-              x: adjustedPoint.x,
-              y: adjustedPoint.y,
+              x: wMousePos.x,
+              y: wMousePos.y,
             })
           ) {
-            if (!first) {
-              this.selectedElement = element;
-              this.sharedService.selectedObject = element;
-              this.isDraggingElement = true;
-              this.dragOffset.set(
-                event.offsetX - element.x * this.sharedService.zoom,
-                event.offsetY - element.y * this.sharedService.zoom
-              );
-            }
-            element.selected = first ? false : true;
-            first = true;
-          } else {
-            element.selected = false;
+            this.selectedElement = element;
+            this.sharedService.selectedObject = element;
+            this.isDraggingElement = true;
+            this.dragOffset.set(
+              event.offsetX - element.x * this.sharedService.zoom,
+              event.offsetY - element.y * this.sharedService.zoom
+            );
+            match = true;
+          }
+          if (!match) {
+            this.selectedElement = undefined;
           }
         }
         this.render();
       }
     }
-    //Middle Click
+
+    //[ MIDDLE CLICK ]
     if (event.button === 1) {
       this.isDraggingMap = true;
       this.dragOffset.set(event.offsetX, event.offsetY);
@@ -172,27 +135,26 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
   }
 
   private mouseOut(event: MouseEvent) {
-    // this.sharedService.selectedObject = undefined;
     this.isDraggingElement = false;
     this.isDraggingMap = false;
     this.dragOffset.set(0, 0);
   }
 
   private mouseMove(event: MouseEvent) {
-    const adjustedPoint = this.ScreenToWorld(event.offsetX, event.offsetY);
+    const wMousePos = this.ScreenToWorld(event.offsetX, event.offsetY);
     if (this.anchorPulled) {
       if (this.backgroundService.snapToGrid) {
         this.selectedElement?.resizeSnapToGrid(
           this.ScreenToWorld(this.dragOffset.x, this.dragOffset.y),
-          adjustedPoint,
+          wMousePos,
           this.backgroundService.gridSize,
           this.anchorPulled
         );
       } else {
         this.selectedElement!.resizeElement(
           this.anchorPulled,
-          adjustedPoint.x,
-          adjustedPoint.y
+          wMousePos.x,
+          wMousePos.y
         );
       }
 
@@ -202,12 +164,12 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
       if (this.backgroundService.snapToGrid) {
         this.selectedElement?.snapToGrid(
           this.ScreenToWorld(this.dragOffset.x, this.dragOffset.y),
-          adjustedPoint,
+          wMousePos,
           this.backgroundService.gridSize
         );
       } else {
         this.selectedElement!.moveElement(
-          adjustedPoint,
+          wMousePos,
           this.ScreenToWorld(this.dragOffset.x, this.dragOffset.y)
         );
       }
@@ -230,19 +192,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
   }
   private mouseUp(event: MouseEvent) {
     this.dragOffset.set(0, 0);
-    if (this.anchorPulled) {
-      this.anchorPulled = undefined;
-    }
-    if (this.isDraggingElement) {
-      this.isDraggingElement = false;
-      if (this.selectedElement) {
-        this.selectedElement.potencialMovementX = 0;
-        this.selectedElement.potencialMovementY = 0;
-      }
-    }
-    if (this.isDraggingMap) {
-      this.isDraggingMap = false;
-    }
+    this.anchorPulled = undefined;
+    this.isDraggingElement = false;
+    this.isDraggingMap = false;
   }
 
   private wheelEvent(event: WheelEvent) {
@@ -424,9 +376,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
   public getClickedAnchor(
     x: number,
     y: number,
-    image: ResizableObject
+    image: ResizableObject | undefined
   ): string | undefined {
-    if (!this) return undefined;
+    if (!image) return undefined;
 
     var ImageTopLeft = this.WorldToScreen(image.x, image.y);
     var ImageBottomRight = this.WorldToScreen(

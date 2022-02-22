@@ -15,8 +15,6 @@ export class ResizableObject {
   public x: number;
   public y: number;
   public selected: boolean | undefined;
-  public potencialMovementX: number = 0;
-  public potencialMovementY: number = 0;
 
   public getClickedAnchor(x: number, y: number): string | undefined {
     if (!this) return undefined;
@@ -154,12 +152,6 @@ export class ResizableObject {
       default:
         break;
     }
-    // var newWidth =
-    //   Math.round((mousePos.x - dragOffset.x) / gridSize) * gridSize +
-    //   gridOffset.x;
-    // var newHeight =
-    //   Math.round((mousePos.y - dragOffset.y) / gridSize) * gridSize +
-    //   gridOffset.y;
 
     if (newWidth != this.width) {
       this.width = newWidth;
