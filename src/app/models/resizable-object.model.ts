@@ -1,4 +1,4 @@
-import { Point } from './point.model';
+import { IPoint, Point } from './point.model';
 import { ANCHOR_CONFIG } from 'src/app/components/const/anchor.config';
 import { ResolveData } from '@angular/router';
 
@@ -19,6 +19,22 @@ export class ResizableObject {
   public potencialMovementY: number = 0;
 
   public getClickedAnchor(x: number, y: number): string | undefined {
+    console.log(
+      'x:',
+      this.x - 10 - 8,
+      '-',
+      this.x - 10 - 8 + 16,
+      x,
+      this.x - 10 - 8 < x && x < this.x - 10 - 8 + 16
+    );
+    console.log(
+      'y:',
+      this.y - 10 - 8,
+      '-',
+      this.y - 10 - 8 + 16,
+      y,
+      this.y - 10 - 8 < y && y < this.y - 10 - 8 + 16
+    );
     if (!this) return undefined;
     var topLeft: ResizableObject = new ResizableObject({
       width: 16,
@@ -257,7 +273,7 @@ export class ResizableObject {
     }
   }
 
-  public moveElement(dragOffset: Point, mousePos: Point) {
+  public moveElement(mousePos: IPoint, dragOffset: IPoint) {
     this.x = mousePos.x - dragOffset.x;
     this.y = mousePos.y - dragOffset.y;
   }

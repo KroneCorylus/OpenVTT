@@ -22,6 +22,7 @@ import {
 } from '@angular/forms';
 import { ResizableObject } from 'src/app/models/resizable-object.model';
 import { SharedService } from 'src/app/services/shared.service';
+import { debounceTime, throttleTime } from 'rxjs/operators';
 
 @Component({
   selector: 'openvtt-properties',
@@ -65,7 +66,6 @@ export class PropertiesComponent implements OnInit {
 
   animation = 'slide';
   ngOnInit(): void {
-    console.log('selectedDetailsComponent.ngOnInit');
     this.formDetails = this._formBuilder.group({
       widthCtrl: new FormControl(null),
       heightCtrl: new FormControl(null),
@@ -73,13 +73,13 @@ export class PropertiesComponent implements OnInit {
       yCtrl: new FormControl(null),
     });
 
-    this.sharedService.onSelectedObjectChanges.subscribe((changes) => {
-      console.log('selectedDetailsComponent.onSelectedObjectChanges', changes);
-      this.patchFormValues(changes);
-    });
+    this.sharedService.onSelectedObjectChanges
+      .pipe(throttleTime(200, undefined, { leading: true, trailing: true }))
+      .subscribe((changes) => {
+        this.patchFormValues(changes);
+      });
 
     this.formDetails.valueChanges.subscribe((value) => {
-      console.log('changes on form', value);
       this.sharedService.updateSelected(
         new ResizableObject({
           x: value.xCtrl,
@@ -93,7 +93,6 @@ export class PropertiesComponent implements OnInit {
   }
 
   private patchFormValues(resizableObject: ResizableObject | undefined) {
-    console.debug('patchFormValues', resizableObject);
     if (resizableObject) {
       var changes: any = {};
       if (resizableObject.width != this.formDetails.controls.widthCtrl.value) {

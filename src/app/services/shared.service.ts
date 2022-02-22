@@ -7,6 +7,7 @@ export class SharedService {
   constructor() {}
 
   public selectedObject: ResizableObject | undefined;
+  public zoom: number = 1;
 
   public onSelectedObjectChanges: Subject<ResizableObject | undefined> =
     new Subject<ResizableObject | undefined>();
@@ -14,7 +15,6 @@ export class SharedService {
   render: Subject<undefined> = new Subject();
 
   public updateSelected(params: ResizableObject | undefined) {
-    console.debug('updateSelected', params);
     if (this.selectedObject && params) {
       if (params.width) {
         this.selectedObject.width = params.width;

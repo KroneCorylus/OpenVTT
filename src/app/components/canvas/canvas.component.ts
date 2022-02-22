@@ -37,17 +37,18 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
   lastY?: number;
   dragOffset: Point = new Point(0, 0);
   gridOffset: Point = new Point(0, 0);
+  panOffset: Point = new Point(0, 0);
+  mousePos: Point = new Point(0, 0);
   anchorPulled: string | undefined;
-
   @Input()
   zArray: any[] = [];
   @Output() zArrayChange = new EventEmitter<any[]>();
 
   selectedElement: ResizableObject | undefined;
   isDraggingMap: boolean = false;
-  zoomValue: number = 1;
   xPan = 0;
   yPan = 0;
+
   potencialMovementX = 0;
   potencialMovementY = 0;
 
@@ -55,7 +56,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
     this.canvas = this.canvasElementRef.nativeElement;
     this.context = this.canvas.getContext('2d')!;
     this.sharedService.render.subscribe((changes) => {
-      console.log('render', changes);
+      console.log('recibe ORDEN TO RENDER');
       this.render();
     });
     // this.addImage();
@@ -66,10 +67,8 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    console.log('ngOnChanges', changes);
     if (this.context) {
       if (changes.zArray) {
-        console.log('onChanges', changes.zArray);
         this.render();
       }
     }
@@ -94,48 +93,51 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
 
   //Events Handlers
   private mouseDown(event: MouseEvent) {
-    console.log('mouseDown this.selectedElement', this.selectedElement);
+    const adjustedPoint = this.ScreenToWorld(event.offsetX, event.offsetY);
     console.log(
-      'mouseDown this.sharedService.selectedObject',
-      this.selectedElement
+      event.offsetX,
+      event.offsetY,
+      this.sharedService.zoom,
+      this.panOffset
     );
     //Left Click
     if (event.button === 0) {
       var anchor = undefined;
       //Check if we have an element selected
       if (this.selectedElement) {
-        anchor = this.selectedElement.getClickedAnchor(
+        console.log('element selected');
+        // anchor = this.selectedElement.getClickedAnchor(
+        //   adjustedPoint.x,
+        //   adjustedPoint.y
+        // );
+        anchor = this.getClickedAnchor(
           event.offsetX,
-          event.offsetY
+          event.offsetY,
+          this.selectedElement
         );
         //Check if we clicked on an anchor
         if (anchor) {
-          //#borrar
-          this.selectedElement!.potencialMovementX = 0;
-          this.selectedElement!.potencialMovementY = 0;
-          //#borrar
           this.lastX = event.offsetX;
           this.lastY = event.offsetY;
           this.anchorPulled = anchor;
           this.dragOffset.set(
-            event.offsetX - this.selectedElement.x,
-            event.offsetY - this.selectedElement.y
+            event.offsetX - this.selectedElement.x * this.sharedService.zoom,
+            event.offsetY - this.selectedElement.y * this.sharedService.zoom
           );
-          console.log(this.dragOffset);
         }
         //Check if we clicked on the selected element
         else if (
           this.selectedElement.ContainsPoint({
-            x: event.offsetX,
-            y: event.offsetY,
+            x: adjustedPoint.x,
+            y: adjustedPoint.y,
           })
         ) {
           this.lastX = event.offsetX;
           this.lastY = event.offsetY;
           this.isDraggingElement = true;
           this.dragOffset.set(
-            event.offsetX - this.selectedElement.x,
-            event.offsetY - this.selectedElement.y
+            event.offsetX - this.selectedElement.x * this.sharedService.zoom,
+            event.offsetY - this.selectedElement.y * this.sharedService.zoom
           );
         } else {
           this.selectedElement = undefined;
@@ -144,12 +146,17 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
       }
       //If there is no element selected
       if (!this.selectedElement) {
-        console.log('Search element on click');
+        console.log('no element selected');
         var first = false;
         for (let i = this.zArray.length - 1; i >= 0; i--) {
           const element: ResizableObject = this.zArray[i];
           this.drawGrid();
-          if (element.ContainsPoint({ x: event.offsetX, y: event.offsetY })) {
+          if (
+            element.ContainsPoint({
+              x: adjustedPoint.x,
+              y: adjustedPoint.y,
+            })
+          ) {
             if (!first) {
               this.selectedElement = element;
               this.sharedService.selectedObject = element;
@@ -157,8 +164,8 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
               this.lastY = event.offsetY;
               this.isDraggingElement = true;
               this.dragOffset.set(
-                event.offsetX - element.x,
-                event.offsetY - element.y
+                event.offsetX - element.x * this.sharedService.zoom,
+                event.offsetY - element.y * this.sharedService.zoom
               );
             }
             element.selected = first ? false : true;
@@ -172,15 +179,14 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
     }
     //Middle Click
     if (event.button === 1) {
-      console.log('mouseDown middle ?', event);
       this.isDraggingMap = true;
       this.lastX = event.offsetX;
       this.lastY = event.offsetY;
+      this.dragOffset.set(event.offsetX, event.offsetY);
     }
   }
 
   private mouseOut(event: MouseEvent) {
-    this.selectedElement = undefined;
     // this.sharedService.selectedObject = undefined;
     this.isDraggingElement = false;
     this.isDraggingMap = false;
@@ -188,8 +194,8 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
   }
 
   private mouseMove(event: MouseEvent) {
+    const adjustedPoint = this.ScreenToWorld(event.offsetX, event.offsetY);
     if (this.anchorPulled && this.lastX && this.lastY) {
-      console.log('Pulling Anchor', event);
       if (this.backgroundService.snapToGrid) {
         this.selectedElement?.resizeSnapToGrid(
           this.dragOffset,
@@ -213,8 +219,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
       this.render();
     }
     if (this.isDraggingElement && this.lastX && this.lastY) {
-      console.log('Draging element', event);
-
       if (this.backgroundService.snapToGrid) {
         this.selectedElement?.snapToGrid(
           this.dragOffset,
@@ -224,8 +228,8 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
         );
       } else {
         this.selectedElement!.moveElement(
-          this.dragOffset,
-          new Point(event.offsetX, event.offsetY)
+          adjustedPoint,
+          this.ScreenToWorld(this.dragOffset.x, this.dragOffset.y)
         );
       }
       this.lastX = event.offsetX;
@@ -245,24 +249,9 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
           this.backgroundService.gridSize) %
         this.backgroundService.gridSize;
       this.gridOffset.set(gridOffsetX, gridOffsetY);
-
-      console.log(
-        'panning',
-        this.xPan,
-        (((this.xPan % this.backgroundService.gridSize) %
-          this.backgroundService.gridSize) +
-          this.backgroundService.gridSize) %
-          this.backgroundService.gridSize,
-        this.yPan,
-        (((this.yPan % this.backgroundService.gridSize) %
-          this.backgroundService.gridSize) +
-          this.backgroundService.gridSize) %
-          this.backgroundService.gridSize
-      );
     }
   }
   private mouseUp(event: MouseEvent) {
-    console.log('mouseUp', event);
     this.dragOffset.set(0, 0);
     if (this.anchorPulled) {
       this.anchorPulled = undefined;
@@ -282,44 +271,36 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
   }
 
   private wheelEvent(event: WheelEvent) {
-    console.log('wheelEvent', event);
-    this.zoom(event.deltaY);
+    this.zoom(event);
   }
 
-  private zoom(delta: number) {
-    var zoom = 1 + -delta / 1000;
-    this.backgroundService.gridSize = this.backgroundService.gridSize * zoom;
-    this.xPan = this.xPan * zoom;
-    this.yPan = this.yPan * zoom;
-    this.zoomValue = this.zoomValue + -delta / 1000;
-    this.zArray.forEach((element) => {
-      element.x = element.x * zoom;
-      element.y = element.y * zoom;
-      element.width = element.width * zoom;
-      element.height = element.height * zoom;
-    });
+  private zoom(event: WheelEvent) {
+    this.mousePos.set(event.offsetX, event.offsetY);
+    var mouseWorldPosBeforeZoom = this.ScreenToWorld(
+      this.mousePos.x,
+      this.mousePos.y
+    );
+    var zoom = 1 + -event.deltaY / 1000;
+    this.sharedService.zoom = this.sharedService.zoom * zoom;
+    var mouseWorldPosAfterZoom = this.ScreenToWorld(
+      this.mousePos.x,
+      this.mousePos.y
+    );
+
+    this.panOffset.x += mouseWorldPosBeforeZoom.x - mouseWorldPosAfterZoom.x;
+    this.panOffset.y += mouseWorldPosBeforeZoom.y - mouseWorldPosAfterZoom.y;
+
     this.render();
-    console.log('zoomValue', this.zoomValue);
   }
-  private pan(x: number, y: number) {
-    if (this.lastX && this.lastY) {
-      console.log('paning', x, y);
-      var xmovement = this.lastX - x;
-      var ymovement = this.lastY - y;
-      this.zArray.forEach((element) => {
-        element.x = element.x - xmovement;
-        element.y = element.y - ymovement;
-      });
-      this.xPan = this.xPan - xmovement;
-      this.yPan = this.yPan - ymovement;
-      this.lastX = x;
-      this.lastY = y;
-      this.render();
-    }
+  private pan(x: number, y: number, dragOffset: Point = this.dragOffset) {
+    this.panOffset.x -= (x - dragOffset.x) / this.sharedService.zoom;
+    this.panOffset.y -= (y - dragOffset.y) / this.sharedService.zoom;
+    dragOffset.y = y;
+    dragOffset.x = x;
+    this.render();
   }
 
   private keyPress(event: KeyboardEvent) {
-    console.log('keyPress', event);
     if (event.key === 'Delete') {
       this.deleteElement(this.selectedElement);
     }
@@ -335,29 +316,28 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
     this.render();
   }
 
+  //draw a grid on the canvas considering the grid size, the grid offset(this.panOffset) and the zoom(this.sharedService.zoom)
   private drawGrid() {
     this.context.strokeStyle = '#333333';
     this.context.fillStyle = '#333333';
     this.context.lineWidth = 0.5;
     for (
-      let i = this.xPan;
-      i < this.canvas.width;
-      i += this.backgroundService.gridSize
+      var x =
+        (-this.panOffset.x % this.backgroundService.gridSize) *
+        this.sharedService.zoom;
+      x < this.canvas.width;
+      x += this.backgroundService.gridSize * this.sharedService.zoom
     ) {
-      this.drawLine(i, 0, i, this.canvas.height);
+      this.drawLine(x, 0, x, this.canvas.height);
     }
     for (
-      let i = this.yPan;
-      i < this.canvas.height;
-      i += this.backgroundService.gridSize
+      var y =
+        (-this.panOffset.y % this.backgroundService.gridSize) *
+        this.sharedService.zoom;
+      y < this.canvas.height;
+      y += this.backgroundService.gridSize * this.sharedService.zoom
     ) {
-      this.drawLine(0, i, this.canvas.width, i);
-    }
-    for (let i = this.xPan; i > 0; i -= this.backgroundService.gridSize) {
-      this.drawLine(i, 0, i, this.canvas.height);
-    }
-    for (let i = this.yPan; i > 0; i -= this.backgroundService.gridSize) {
-      this.drawLine(0, i, this.canvas.width, i);
+      this.drawLine(0, y, this.canvas.width, y);
     }
   }
 
@@ -369,43 +349,51 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
   }
 
   //this function draws a square around a image with a padding and a anchor in every corner
-  private drawAnchors(image: any) {
+  private drawAnchors(image: ResizableObject) {
+    const zoom = this.sharedService.zoom;
+    const adjustedPoint = this.WorldToScreen(image.x, image.y);
+    const adjustedWidth = image.width * zoom;
+    const adjustedHeight = image.height * zoom;
     this.context.strokeStyle = ANCHOR_CONFIG.lineColor;
     this.context.lineWidth = ANCHOR_CONFIG.lineWidth;
+
     this.context.strokeRect(
-      image.x - ANCHOR_CONFIG.padding,
-      image.y - ANCHOR_CONFIG.padding,
-      image.width + ANCHOR_CONFIG.padding * 2,
-      image.height + ANCHOR_CONFIG.padding * 2
+      adjustedPoint.x - ANCHOR_CONFIG.padding,
+      adjustedPoint.y - ANCHOR_CONFIG.padding,
+      adjustedWidth + ANCHOR_CONFIG.padding * 2,
+      adjustedHeight + ANCHOR_CONFIG.padding * 2
     );
     this.drawAnchor(
-      image.x - ANCHOR_CONFIG.padding,
-      image.y - ANCHOR_CONFIG.padding
+      adjustedPoint.x - ANCHOR_CONFIG.padding,
+      adjustedPoint.y - ANCHOR_CONFIG.padding
     );
     this.drawAnchor(
-      image.x + image.width + ANCHOR_CONFIG.padding,
-      image.y - ANCHOR_CONFIG.padding
+      adjustedPoint.x + adjustedWidth + ANCHOR_CONFIG.padding,
+      adjustedPoint.y - ANCHOR_CONFIG.padding
     );
     this.drawAnchor(
-      image.x - ANCHOR_CONFIG.padding,
-      image.y + image.height + ANCHOR_CONFIG.padding
+      adjustedPoint.x - ANCHOR_CONFIG.padding,
+      adjustedPoint.y + adjustedHeight + ANCHOR_CONFIG.padding
     );
     this.drawAnchor(
-      image.x + image.width + ANCHOR_CONFIG.padding,
-      image.y + image.height + ANCHOR_CONFIG.padding
-    );
-    this.drawAnchor(image.x + image.width / 2, image.y - ANCHOR_CONFIG.padding);
-    this.drawAnchor(
-      image.x + image.width / 2,
-      image.y + image.height + ANCHOR_CONFIG.padding
+      adjustedPoint.x + adjustedWidth + ANCHOR_CONFIG.padding,
+      adjustedPoint.y + adjustedHeight + ANCHOR_CONFIG.padding
     );
     this.drawAnchor(
-      image.x - ANCHOR_CONFIG.padding,
-      image.y + image.height / 2
+      adjustedPoint.x + adjustedWidth / 2,
+      adjustedPoint.y - ANCHOR_CONFIG.padding
     );
     this.drawAnchor(
-      image.x + image.width + ANCHOR_CONFIG.padding,
-      image.y + image.height / 2
+      adjustedPoint.x + adjustedWidth / 2,
+      adjustedPoint.y + adjustedHeight + ANCHOR_CONFIG.padding
+    );
+    this.drawAnchor(
+      adjustedPoint.x - ANCHOR_CONFIG.padding,
+      adjustedPoint.y + adjustedHeight / 2
+    );
+    this.drawAnchor(
+      adjustedPoint.x + adjustedWidth + ANCHOR_CONFIG.padding,
+      adjustedPoint.y + adjustedHeight / 2
     );
   }
 
@@ -433,13 +421,120 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
       image.height = image.element.height;
       image.width = image.element.width;
     }
+
+    var ajustedCoords = this.WorldToScreen(image.x, image.y);
     this.context.drawImage(
       image.element,
-      image.x,
-      image.y,
-      image.width,
-      image.height
+      ajustedCoords.x,
+      ajustedCoords.y,
+      image.width * this.sharedService.zoom,
+      image.height * this.sharedService.zoom
     );
+  }
+
+  private WorldToScreen(x: number, y: number) {
+    return {
+      x: Math.round((x - this.panOffset.x) * this.sharedService.zoom),
+      y: Math.round((y - this.panOffset.y) * this.sharedService.zoom),
+    };
+  }
+
+  private ScreenToWorld(x: number, y: number) {
+    return {
+      x: x / this.sharedService.zoom + this.panOffset.x,
+      y: y / this.sharedService.zoom + this.panOffset.y,
+    };
+  }
+
+  public getClickedAnchor(
+    x: number,
+    y: number,
+    image: ResizableObject
+  ): string | undefined {
+    if (!this) return undefined;
+
+    var ImageTopLeft = this.WorldToScreen(image.x, image.y);
+    var ImageBottomRight = this.WorldToScreen(
+      image.x + image.width,
+      image.y + image.height
+    );
+
+    var topLeft: ResizableObject = new ResizableObject({
+      width: 16,
+      height: 16,
+      x: ImageTopLeft.x - ANCHOR_CONFIG.padding - ANCHOR_CONFIG.size,
+      y: ImageTopLeft.y - ANCHOR_CONFIG.padding - ANCHOR_CONFIG.size,
+    });
+    var topRight: ResizableObject = new ResizableObject({
+      width: 16,
+      height: 16,
+      x: ImageBottomRight.x + ANCHOR_CONFIG.padding - ANCHOR_CONFIG.size,
+      y: ImageTopLeft.y - ANCHOR_CONFIG.padding - ANCHOR_CONFIG.size,
+    });
+    var bottomLeft: ResizableObject = new ResizableObject({
+      width: 16,
+      height: 16,
+      x: ImageTopLeft.x - ANCHOR_CONFIG.padding - ANCHOR_CONFIG.size,
+      y: ImageBottomRight.y + ANCHOR_CONFIG.padding - ANCHOR_CONFIG.size,
+    });
+    var bottomRight: ResizableObject = new ResizableObject({
+      width: 16,
+      height: 16,
+      x: ImageBottomRight.x + ANCHOR_CONFIG.padding - ANCHOR_CONFIG.size,
+      y: ImageBottomRight.y + ANCHOR_CONFIG.padding - ANCHOR_CONFIG.size,
+    });
+    var top: ResizableObject = new ResizableObject({
+      width: 16,
+      height: 16,
+      x:
+        ImageTopLeft.x +
+        (ImageBottomRight.x - ImageTopLeft.x) / 2 -
+        ANCHOR_CONFIG.size,
+      y: ImageTopLeft.y - ANCHOR_CONFIG.padding - ANCHOR_CONFIG.size,
+    });
+    var bottom: ResizableObject = new ResizableObject({
+      width: 16,
+      height: 16,
+      x:
+        ImageTopLeft.x +
+        (ImageBottomRight.x - ImageTopLeft.x) / 2 -
+        ANCHOR_CONFIG.size,
+      y: ImageBottomRight.y + ANCHOR_CONFIG.padding - ANCHOR_CONFIG.size,
+    });
+    var left: ResizableObject = new ResizableObject({
+      width: 16,
+      height: 16,
+      x: ImageTopLeft.x - ANCHOR_CONFIG.padding - ANCHOR_CONFIG.size,
+      y:
+        ImageTopLeft.y +
+        (ImageBottomRight.y - ImageTopLeft.y) / 2 -
+        ANCHOR_CONFIG.size,
+    });
+    var right: ResizableObject = new ResizableObject({
+      width: 16,
+      height: 16,
+      x: ImageBottomRight.x + ANCHOR_CONFIG.padding - ANCHOR_CONFIG.size,
+      y: ImageTopLeft.y + (ImageBottomRight.y - ImageTopLeft.y) / 2,
+    });
+    if (topLeft.ContainsPoint({ x, y })) {
+      return 'topLeft';
+    } else if (topRight.ContainsPoint({ x, y })) {
+      return 'topRight';
+    } else if (bottomLeft.ContainsPoint({ x, y })) {
+      return 'bottomLeft';
+    } else if (bottomRight.ContainsPoint({ x, y })) {
+      return 'bottomRight';
+    } else if (top.ContainsPoint({ x, y })) {
+      return 'top';
+    } else if (bottom.ContainsPoint({ x, y })) {
+      return 'bottom';
+    } else if (left.ContainsPoint({ x, y })) {
+      return 'left';
+    } else if (right.ContainsPoint({ x, y })) {
+      return 'right';
+    } else {
+      return undefined;
+    }
   }
 
   private render() {

@@ -53,7 +53,6 @@ export class ToolOptionsComponent implements OnInit {
         });
         bg.element.src = bg.url;
         bg.element.addEventListener('load', () => {
-          console.log([...this.layer, bg]);
           this.layer = [...this.layer, bg];
           this.layerChange.emit(this.layer);
         });
@@ -62,6 +61,5 @@ export class ToolOptionsComponent implements OnInit {
     if (e?.target?.files[0]) {
       reader.readAsDataURL(e.target.files[0]);
     }
-    console.log('asd');
   }
 }
