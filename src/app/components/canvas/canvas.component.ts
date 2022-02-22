@@ -30,27 +30,21 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
   ) {}
 
   @ViewChild('layer1', { static: true })
-  canvasElementRef!: ElementRef<HTMLCanvasElement>;
-  canvas!: HTMLCanvasElement;
-  context!: CanvasRenderingContext2D;
-  lastX?: number;
-  lastY?: number;
-  dragOffset: Point = new Point(0, 0);
-  gridOffset: Point = new Point(0, 0);
-  panOffset: Point = new Point(0, 0);
-  mousePos: Point = new Point(0, 0);
-  anchorPulled: string | undefined;
+  private canvasElementRef!: ElementRef<HTMLCanvasElement>;
+  private canvas!: HTMLCanvasElement;
+  private context!: CanvasRenderingContext2D;
+  private dragOffset: Point = new Point(0, 0);
+  private gridOffset: Point = new Point(0, 0);
+  private panOffset: Point = new Point(0, 0);
+  private mousePos: Point = new Point(0, 0);
+  private anchorPulled: string | undefined;
+
   @Input()
   zArray: any[] = [];
   @Output() zArrayChange = new EventEmitter<any[]>();
 
-  selectedElement: ResizableObject | undefined;
-  isDraggingMap: boolean = false;
-  xPan = 0;
-  yPan = 0;
-
-  potencialMovementX = 0;
-  potencialMovementY = 0;
+  private selectedElement: ResizableObject | undefined;
+  private isDraggingMap: boolean = false;
 
   ngOnInit(): void {
     this.canvas = this.canvasElementRef.nativeElement;
@@ -59,7 +53,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
       console.log('recibe ORDEN TO RENDER');
       this.render();
     });
-    // this.addImage();
   }
 
   ngAfterViewInit() {
@@ -117,8 +110,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
         );
         //Check if we clicked on an anchor
         if (anchor) {
-          this.lastX = event.offsetX;
-          this.lastY = event.offsetY;
           this.anchorPulled = anchor;
           this.dragOffset.set(
             event.offsetX - this.selectedElement.x * this.sharedService.zoom,
@@ -132,8 +123,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
             y: adjustedPoint.y,
           })
         ) {
-          this.lastX = event.offsetX;
-          this.lastY = event.offsetY;
           this.isDraggingElement = true;
           this.dragOffset.set(
             event.offsetX - this.selectedElement.x * this.sharedService.zoom,
@@ -160,8 +149,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
             if (!first) {
               this.selectedElement = element;
               this.sharedService.selectedObject = element;
-              this.lastX = event.offsetX;
-              this.lastY = event.offsetY;
               this.isDraggingElement = true;
               this.dragOffset.set(
                 event.offsetX - element.x * this.sharedService.zoom,
@@ -180,8 +167,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
     //Middle Click
     if (event.button === 1) {
       this.isDraggingMap = true;
-      this.lastX = event.offsetX;
-      this.lastY = event.offsetY;
       this.dragOffset.set(event.offsetX, event.offsetY);
     }
   }
@@ -195,35 +180,29 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
 
   private mouseMove(event: MouseEvent) {
     const adjustedPoint = this.ScreenToWorld(event.offsetX, event.offsetY);
-    if (this.anchorPulled && this.lastX && this.lastY) {
+    if (this.anchorPulled) {
       if (this.backgroundService.snapToGrid) {
         this.selectedElement?.resizeSnapToGrid(
-          this.dragOffset,
-          new Point(event.offsetX, event.offsetY),
-          this.gridOffset,
+          this.ScreenToWorld(this.dragOffset.x, this.dragOffset.y),
+          adjustedPoint,
           this.backgroundService.gridSize,
           this.anchorPulled
         );
       } else {
         this.selectedElement!.resizeElement(
           this.anchorPulled,
-          this.lastX,
-          this.lastY,
-          event.offsetX,
-          event.offsetY
+          adjustedPoint.x,
+          adjustedPoint.y
         );
       }
 
-      this.lastX = event.offsetX;
-      this.lastY = event.offsetY;
       this.render();
     }
-    if (this.isDraggingElement && this.lastX && this.lastY) {
+    if (this.isDraggingElement) {
       if (this.backgroundService.snapToGrid) {
         this.selectedElement?.snapToGrid(
-          this.dragOffset,
-          new Point(event.offsetX, event.offsetY),
-          this.gridOffset,
+          this.ScreenToWorld(this.dragOffset.x, this.dragOffset.y),
+          adjustedPoint,
           this.backgroundService.gridSize
         );
       } else {
@@ -232,19 +211,17 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
           this.ScreenToWorld(this.dragOffset.x, this.dragOffset.y)
         );
       }
-      this.lastX = event.offsetX;
-      this.lastY = event.offsetY;
       this.render();
     }
     if (this.isDraggingMap) {
       this.pan(event.offsetX, event.offsetY);
       var gridOffsetX =
-        (((this.xPan % this.backgroundService.gridSize) %
+        (((this.panOffset.x % this.backgroundService.gridSize) %
           this.backgroundService.gridSize) +
           this.backgroundService.gridSize) %
         this.backgroundService.gridSize;
       var gridOffsetY =
-        (((this.yPan % this.backgroundService.gridSize) %
+        (((this.panOffset.y % this.backgroundService.gridSize) %
           this.backgroundService.gridSize) +
           this.backgroundService.gridSize) %
         this.backgroundService.gridSize;
@@ -255,8 +232,6 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
     this.dragOffset.set(0, 0);
     if (this.anchorPulled) {
       this.anchorPulled = undefined;
-      this.lastX = undefined;
-      this.lastY = undefined;
     }
     if (this.isDraggingElement) {
       this.isDraggingElement = false;

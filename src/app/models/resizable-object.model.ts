@@ -19,22 +19,6 @@ export class ResizableObject {
   public potencialMovementY: number = 0;
 
   public getClickedAnchor(x: number, y: number): string | undefined {
-    console.log(
-      'x:',
-      this.x - 10 - 8,
-      '-',
-      this.x - 10 - 8 + 16,
-      x,
-      this.x - 10 - 8 < x && x < this.x - 10 - 8 + 16
-    );
-    console.log(
-      'y:',
-      this.y - 10 - 8,
-      '-',
-      this.y - 10 - 8 + 16,
-      y,
-      this.y - 10 - 8 < y && y < this.y - 10 - 8 + 16
-    );
     if (!this) return undefined;
     var topLeft: ResizableObject = new ResizableObject({
       width: 16,
@@ -114,9 +98,8 @@ export class ResizableObject {
   }
 
   public resizeSnapToGrid(
-    dragOffset: Point,
-    mousePos: Point,
-    gridOffset: Point,
+    dragOffset: IPoint,
+    mousePos: IPoint,
     gridSize: number,
     AnchorPulled: string
   ) {
@@ -133,52 +116,40 @@ export class ResizableObject {
       case 'topLeft':
         newX = Math.round(deltaX / gridSize) * gridSize;
         newWidth =
-          Math.round((this.x - deltaX + this.width) / gridSize) * gridSize +
-          gridOffset.x;
+          Math.round((this.x - deltaX + this.width) / gridSize) * gridSize;
         newHeight = newWidth / ratio;
         newY = this.y + (this.width - newWidth);
         break;
       case 'topRight':
-        newWidth =
-          Math.round((mousePos.x - this.x) / gridSize) * gridSize +
-          gridOffset.x;
+        newWidth = Math.round((mousePos.x - this.x) / gridSize) * gridSize;
         newHeight = newWidth / ratio;
         newY = this.y + (this.width - newWidth);
         break;
       case 'bottomLeft':
         newX = Math.round(deltaX / gridSize) * gridSize;
         newWidth =
-          Math.round((this.x - deltaX + this.width) / gridSize) * gridSize +
-          gridOffset.x;
+          Math.round((this.x - deltaX + this.width) / gridSize) * gridSize;
         newHeight = newWidth / ratio;
         break;
       case 'bottomRight':
-        newWidth =
-          Math.round((mousePos.x - this.x) / gridSize) * gridSize +
-          gridOffset.x;
+        newWidth = Math.round((mousePos.x - this.x) / gridSize) * gridSize;
         newHeight = newWidth / ratio;
         break;
       case 'top':
         newY = Math.round(deltaY / gridSize) * gridSize;
         newHeight =
-          Math.round((this.y - deltaY + this.height) / gridSize) * gridSize +
-          gridOffset.y;
+          Math.round((this.y - deltaY + this.height) / gridSize) * gridSize;
         break;
       case 'bottom':
-        newHeight =
-          Math.round((mousePos.y - this.y) / gridSize) * gridSize +
-          gridOffset.y;
+        newHeight = Math.round((mousePos.y - this.y) / gridSize) * gridSize;
         break;
       case 'left':
         newX = Math.round(deltaX / gridSize) * gridSize;
         newWidth =
-          Math.round((this.x - deltaX + this.width) / gridSize) * gridSize +
-          gridOffset.x;
+          Math.round((this.x - deltaX + this.width) / gridSize) * gridSize;
         break;
       case 'right':
-        newWidth =
-          Math.round((mousePos.x - this.x) / gridSize) * gridSize +
-          gridOffset.x;
+        newWidth = Math.round((mousePos.x - this.x) / gridSize) * gridSize;
         break;
       default:
         break;
@@ -200,70 +171,51 @@ export class ResizableObject {
     }
   }
 
-  public resizeElement(
-    AnchorPulled: string,
-    lastX: number,
-    lastY: number,
-    x: number,
-    y: number
-  ) {
-    if (lastX && lastY) {
-      var xmovement = lastX - x;
-      var ymovement = lastY - y;
-      var ratio = this.width / this.height;
-      switch (AnchorPulled) {
-        case 'topLeft':
-          this.width = this.width + xmovement;
-          this.height = this.width / ratio;
-          this.x = this.x - xmovement;
-          this.y = this.y - xmovement;
-          break;
-        case 'topRight':
-          this.width = this.width - xmovement;
-          this.height = this.width / ratio;
-          this.y = this.y + xmovement;
-          break;
-        case 'bottomLeft':
-          this.width = this.width + xmovement;
-          this.height = this.width / ratio;
-          this.x = this.x - xmovement;
-          break;
-        case 'bottomRight':
-          this.width = this.width - xmovement;
-          this.height = this.width / ratio;
-          break;
-        case 'top':
-          this.height = this.height + ymovement;
-          this.y = this.y - ymovement;
-          break;
-        case 'bottom':
-          this.height = this.height - ymovement;
-          break;
-        case 'left':
-          this.width = this.width + xmovement;
-          this.x = this.x - xmovement;
-          break;
-        case 'right':
-          this.width = this.width - xmovement;
-          break;
-        default:
-          break;
-      }
+  public resizeElement(AnchorPulled: string, x: number, y: number) {
+    var ratio = this.width / this.height;
+    switch (AnchorPulled) {
+      case 'topLeft':
+        this.width = this.x - x + this.width;
+        this.y -= this.width / ratio - this.height;
+        this.height = this.width / ratio;
+        this.x = x;
+        break;
+      case 'topRight':
+        this.width = x - this.x;
+        this.y -= this.width / ratio - this.height;
+        this.height = this.width / ratio;
+        break;
+      case 'bottomLeft':
+        this.width = this.x - x + this.width;
+        this.height = this.width / ratio;
+        this.x = x;
+        break;
+      case 'bottomRight':
+        this.width = x - this.x;
+        this.height = this.width / ratio;
+        break;
+      case 'top':
+        this.height = this.y - y + this.height;
+        this.y = y;
+        break;
+      case 'bottom':
+        this.height = y - this.y;
+        break;
+      case 'left':
+        this.width = this.x - x + this.width;
+        this.x = x;
+        break;
+      case 'right':
+        this.width = x - this.x;
+        break;
+      default:
+        break;
     }
   }
 
-  public snapToGrid(
-    dragOffset: Point,
-    mousePos: Point,
-    gridOffset: Point,
-    gridSize: number
-  ) {
-    var newX =
-      Math.round((mousePos.x - dragOffset.x) / gridSize) * gridSize +
-      gridOffset.x;
-    var newY =
-      Math.round((mousePos.y - dragOffset.y) / gridSize) * gridSize +
-      gridOffset.y;
+  public snapToGrid(dragOffset: IPoint, mousePos: IPoint, gridSize: number) {
+    var newX = Math.round((mousePos.x - dragOffset.x) / gridSize) * gridSize;
+    var newY = Math.round((mousePos.y - dragOffset.y) / gridSize) * gridSize;
 
     if (newX != this.x) {
       this.x = newX;
@@ -274,8 +226,8 @@ export class ResizableObject {
   }
 
   public moveElement(mousePos: IPoint, dragOffset: IPoint) {
-    this.x = mousePos.x - dragOffset.x;
-    this.y = mousePos.y - dragOffset.y;
+    this.x = Math.round(mousePos.x - dragOffset.x);
+    this.y = Math.round(mousePos.y - dragOffset.y);
   }
 
   public patchValues(params: any) {

@@ -16,16 +16,16 @@ export class SharedService {
 
   public updateSelected(params: ResizableObject | undefined) {
     if (this.selectedObject && params) {
-      if (params.width) {
+      if (params.width != undefined) {
         this.selectedObject.width = params.width;
       }
-      if (params.height) {
+      if (params.height != undefined) {
         this.selectedObject.height = params.height;
       }
-      if (params.x) {
+      if (params.x != undefined) {
         this.selectedObject.x = params.x;
       }
-      if (params.y) {
+      if (params.y != undefined) {
         this.selectedObject.y = params.y;
       }
       this.onSelectedObjectChanges.next(this.selectedObject);

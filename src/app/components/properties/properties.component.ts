@@ -82,10 +82,10 @@ export class PropertiesComponent implements OnInit {
     this.formDetails.valueChanges.subscribe((value) => {
       this.sharedService.updateSelected(
         new ResizableObject({
-          x: value.xCtrl,
-          y: value.yCtrl,
-          width: value.widthCtrl,
-          height: value.heightCtrl,
+          x: value.xCtrl ?? 0,
+          y: value.yCtrl ?? 0,
+          width: value.widthCtrl ?? 0,
+          height: value.heightCtrl ?? 0,
         })
       );
       this.sharedService.render.next();
