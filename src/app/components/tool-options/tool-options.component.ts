@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { ImageObject } from 'src/app/models/image-object.model';
 import { BackgroundService } from 'src/app/services/background.service';
+import { SharedService } from 'src/app/services/shared.service';
 
 @Component({
   selector: 'openvtt-tool-options',
@@ -16,7 +17,10 @@ import { BackgroundService } from 'src/app/services/background.service';
   styleUrls: ['./tool-options.component.scss'],
 })
 export class ToolOptionsComponent implements OnInit {
-  constructor(public backgroundService: BackgroundService) {}
+  constructor(
+    public backgroundService: BackgroundService,
+    public sharedService: SharedService
+  ) {}
 
   selectedColor: string = '#c32af3';
 
@@ -26,6 +30,13 @@ export class ToolOptionsComponent implements OnInit {
   @Input()
   layer: any[] = [];
   @Output() layerChange = new EventEmitter<any[]>();
+
+  fileName: string | undefined = undefined;
+
+  onFileSelected(event: any) {
+    console.log(event.target.files[0].name);
+    this.handleImage(event);
+  }
 
   ngOnInit(): void {}
 
@@ -38,6 +49,7 @@ export class ToolOptionsComponent implements OnInit {
   }
 
   private handleImage(e: any): void {
+    this.fileName = e.target.files[0].name;
     var reader = new FileReader();
     reader.addEventListener('load', (event) => {
       var img = new Image();

@@ -18,7 +18,7 @@ import { NgxColorsModule } from 'ngx-colors';
 import { MatInputModule } from '@angular/material/input';
 import { PropertiesComponent } from './components/properties/properties.component';
 import { SharedService } from './services/shared.service';
-
+import { MatButtonModule } from '@angular/material/button';
 @NgModule({
   declarations: [
     AppComponent,
@@ -40,6 +40,7 @@ import { SharedService } from './services/shared.service';
     MatCheckboxModule,
     NgxColorsModule,
     MatInputModule,
+    MatButtonModule,
   ],
   providers: [BackgroundService, SharedService],
   bootstrap: [AppComponent],

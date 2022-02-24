@@ -6,6 +6,7 @@ import { ResizableObject } from '../models/resizable-object.model';
 export class SharedService {
   constructor() {}
 
+  public selectedTool: string = 'background';
   public selectedObject: ResizableObject | undefined;
   public zoom: number = 1;
 

@@ -15,6 +15,7 @@ import { ANCHOR_CONFIG } from 'src/app/components/const/anchor.config';
 import { ResizableObject } from 'src/app/models/resizable-object.model';
 import { Point } from 'src/app/models/point.model';
 import { SharedService } from 'src/app/services/shared.service';
+import { ImageObject } from 'src/app/models/image-object.model';
 
 @Component({
   selector: 'openvtt-canvas',
@@ -53,6 +54,59 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
     this.sharedService.render.subscribe((changes) => {
       this.render();
     });
+  }
+
+  test() {
+    var tokenImage = new ImageObject({
+      height: 700,
+      width: -1,
+      x: 450,
+      y: 225,
+      selected: false,
+      element: new window.Image(),
+      url: 'https://cdnb.artstation.com/p/assets/images/images/012/357/325/large/matthew-myslinski-elfpainting-semifinal-small.jpg',
+    });
+    tokenImage.element.src = tokenImage.url;
+
+    var ratio = tokenImage.element.width / tokenImage.element.height;
+
+    this.context.drawImage(
+      tokenImage.element,
+      tokenImage.x,
+      tokenImage.y,
+      tokenImage.height * ratio,
+      tokenImage.height
+    );
+
+    this.context.globalCompositeOperation = 'destination-in';
+
+    var frameClip = new ImageObject({
+      height: -1,
+      width: -1,
+      x: 450,
+      y: 225,
+      selected: false,
+      element: new window.Image(),
+      url: 'https://i.imgur.com/Y7VG1Qq.png',
+    });
+    frameClip.element.src = frameClip.url;
+
+    this.context.drawImage(frameClip.element, frameClip.x, frameClip.y);
+
+    this.context.globalCompositeOperation = 'source-over';
+
+    var tokenFrame = new ImageObject({
+      height: -1,
+      width: -1,
+      x: 450,
+      y: 225,
+      selected: false,
+      element: new window.Image(),
+      url: 'https://s3.amazonaws.com/files.d20.io/marketplace/1536716/HUyw6HZghOIaSjJOILzn1w/med.png?1608205678116',
+    });
+    tokenFrame.element.src = tokenFrame.url;
+
+    this.context.drawImage(tokenFrame.element, tokenFrame.x, tokenFrame.y);
   }
 
   ngAfterViewInit() {

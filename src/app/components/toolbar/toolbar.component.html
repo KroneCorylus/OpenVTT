@@ -27,12 +27,22 @@
   <div class="separator">
     <div></div>
   </div>
-  <div class="button" matTooltip="Insert Token" matTooltipPosition="right">
+  <div
+    class="button"
+    (click)="onClickTool('token')"
+    matTooltip="Insert Token"
+    matTooltipPosition="right"
+  >
     <mat-icon aria-hidden="false" aria-label="Example home icon"
       >person_outline</mat-icon
     >
   </div>
-  <div class="button" matTooltip="Insert Background" matTooltipPosition="right">
+  <div
+    class="button"
+    (click)="onClickTool('background')"
+    matTooltip="Insert Background"
+    matTooltipPosition="right"
+  >
     <mat-icon aria-hidden="false" aria-label="Example home icon"
       >wallpaper</mat-icon
     >

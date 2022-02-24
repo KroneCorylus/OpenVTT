@@ -1,6 +1,6 @@
 .tooloptions {
   width: fit-content;
-  height: 35px;
+  height: 36px;
   display: flex;
   background-color: #fafafa;
   position: fixed;
@@ -14,4 +14,38 @@
 }
 .tooloptions > div {
   margin: 0 5px;
+}
+.file-input {
+  display: none;
+}
+.file-upload {
+  display: flex;
+  align-items: center;
+  .filename {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    width: 120px;
+  }
+}
+.button {
+  background-color: #fafafa;
+  cursor: pointer;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  transition: 0.3s;
+}
+.button:hover {
+  transition: 0.3s;
+  background-color: #e6e6e6;
+}
+.button.toggleon {
+  background-color: #ff4081;
+  img {
+    filter: invert(1);
+  }
 }

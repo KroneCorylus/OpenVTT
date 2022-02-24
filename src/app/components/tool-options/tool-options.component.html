@@ -1,18 +1,66 @@
 <div class="tooloptions z3">
-  <div>
+  <div
+    class="button z1"
+    [class.toggleon]="backgroundService.snapToGrid"
+    matTooltip="Snap to grid"
+    (click)="backgroundService.snapToGrid = !backgroundService.snapToGrid"
+  >
+    <img src="assets/icons/magnet_24.png" alt="frame" />
+  </div>
+  <!-- <div>
     <mat-checkbox
       class="example-margin"
       [(ngModel)]="backgroundService.snapToGrid"
       >Snap to Grid</mat-checkbox
     >
-  </div>
-  <div>
-    <input type="file" #imageUploader name="imageLoader" />
-  </div>
-  <div
-    ngx-colors-trigger
-    style="width: 50px; height: 50px; margin: 10px"
-    [style.background]="selectedColor"
-    [(ngModel)]="selectedColor"
-  ></div>
+  </div> -->
+
+  <ng-container *ngIf="sharedService.selectedTool == 'background'">
+    <input
+      type="file"
+      class="file-input"
+      (change)="onFileSelected($event)"
+      #fileUpload
+    />
+    <div class="file-upload">
+      <!-- <div class="filename">{{ fileName || "No file uploaded yet." }}</div> -->
+      <button
+        mat-raised-button
+        color="accent"
+        class="upload-btn"
+        (click)="fileUpload.click()"
+      >
+        <mat-icon>upload</mat-icon>
+      </button>
+    </div>
+  </ng-container>
+
+  <ng-container *ngIf="sharedService.selectedTool == 'token'">
+    <div class="button z1" matTooltip="Select Frame">
+      <img src="assets/icons/frame_24.png" alt="frame" />
+    </div>
+    <div class="button z1" matTooltip="Load from library">
+      <img src="assets/icons/books_24.png" alt="collection" />
+    </div>
+    <div class="button z1" matTooltip="Advanced token editor">
+      <img src="assets/icons/settings_lines_24.png" alt="Advanced" />
+    </div>
+    <input
+      type="file"
+      class="file-input"
+      (change)="onFileSelected($event)"
+      #fileUpload
+    />
+    <div class="file-upload">
+      <!-- <div class="filename">{{ fileName || "No file uploaded yet." }}</div> -->
+      <button
+        mat-raised-button
+        color="accent"
+        class="upload-btn"
+        (click)="fileUpload.click()"
+      >
+        <mat-icon>upload</mat-icon>
+      </button>
+    </div>
+  </ng-container>
 </div>
