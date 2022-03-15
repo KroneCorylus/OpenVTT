@@ -27,6 +27,9 @@ export class ToolOptionsComponent implements OnInit {
   @ViewChild('imageUploader', { static: false })
   imageUploader!: ElementRef<HTMLCanvasElement>;
 
+  @ViewChild('fileUpload', { static: false })
+  fileInput!: ElementRef<HTMLInputElement>;
+
   @Input()
   layer: any[] = [];
   @Output() layerChange = new EventEmitter<any[]>();
@@ -34,18 +37,21 @@ export class ToolOptionsComponent implements OnInit {
   fileName: string | undefined = undefined;
 
   onFileSelected(event: any) {
-    console.log(event.target.files[0].name);
-    this.handleImage(event);
+    console.log('onFileSelected', event, this.fileInput.nativeElement.value);
+    if (event.target.files[0].name) {
+      console.log(event.target.files[0].name);
+      this.handleImage(event);
+    }
   }
 
   ngOnInit(): void {}
 
   ngAfterViewInit(): void {
-    this.imageUploader.nativeElement.addEventListener(
-      'change',
-      this.handleImage.bind(this),
-      false
-    );
+    // this.imageUploader.nativeElement.addEventListener(
+    //   'change',
+    //   this.handleImage.bind(this),
+    //   false
+    // );
   }
 
   private handleImage(e: any): void {
@@ -68,6 +74,7 @@ export class ToolOptionsComponent implements OnInit {
           this.layer = [...this.layer, bg];
           this.layerChange.emit(this.layer);
         });
+        this.fileInput.nativeElement.value = '';
       }
     });
     if (e?.target?.files[0]) {
