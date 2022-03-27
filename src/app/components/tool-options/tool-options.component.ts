@@ -81,4 +81,6 @@ export class ToolOptionsComponent implements OnInit {
       reader.readAsDataURL(e.target.files[0]);
     }
   }
+
+  onLoadToken() {}
 }

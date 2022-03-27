@@ -16,6 +16,15 @@ import { ResizableObject } from 'src/app/models/resizable-object.model';
 import { Point } from 'src/app/models/point.model';
 import { SharedService } from 'src/app/services/shared.service';
 import { ImageObject } from 'src/app/models/image-object.model';
+import { fromEvent, zip } from 'rxjs';
+import {
+  concatAll,
+  map,
+  concatWith,
+  take,
+  finalize,
+  delay,
+} from 'rxjs/operators';
 
 @Component({
   selector: 'openvtt-canvas',
@@ -57,56 +66,78 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
   }
 
   test() {
-    var tokenImage = new ImageObject({
+    var token = new ImageObject({
       height: 700,
-      width: -1,
+      width: undefined,
       x: 450,
       y: 225,
       selected: false,
       element: new window.Image(),
-      url: 'https://cdnb.artstation.com/p/assets/images/images/012/357/325/large/matthew-myslinski-elfpainting-semifinal-small.jpg',
+      url: 'https://i.imgur.com/INLD2IJ.jpg',
     });
-    tokenImage.element.src = tokenImage.url;
 
-    var ratio = tokenImage.element.width / tokenImage.element.height;
-
-    this.context.drawImage(
-      tokenImage.element,
-      tokenImage.x,
-      tokenImage.y,
-      tokenImage.height * ratio,
-      tokenImage.height
-    );
-
-    this.context.globalCompositeOperation = 'destination-in';
-
-    var frameClip = new ImageObject({
-      height: -1,
-      width: -1,
+    var clipmask = new ImageObject({
+      height: undefined,
+      width: undefined,
       x: 450,
       y: 225,
       selected: false,
       element: new window.Image(),
       url: 'https://i.imgur.com/Y7VG1Qq.png',
     });
-    frameClip.element.src = frameClip.url;
 
-    this.context.drawImage(frameClip.element, frameClip.x, frameClip.y);
-
-    this.context.globalCompositeOperation = 'source-over';
-
-    var tokenFrame = new ImageObject({
-      height: -1,
-      width: -1,
+    var frame = new ImageObject({
+      height: undefined,
+      width: undefined,
       x: 450,
       y: 225,
       selected: false,
       element: new window.Image(),
-      url: 'https://s3.amazonaws.com/files.d20.io/marketplace/1536716/HUyw6HZghOIaSjJOILzn1w/med.png?1608205678116',
+      url: 'https://i.imgur.com/bHEemdi.jpg',
     });
-    tokenFrame.element.src = tokenFrame.url;
 
-    this.context.drawImage(tokenFrame.element, tokenFrame.x, tokenFrame.y);
+    const token$ = fromEvent(token.element, 'load').pipe(
+      take(1),
+      map(() => {
+        return { image: token, composition: 'source-over' };
+      })
+    );
+
+    const clipMask$ = fromEvent(clipmask.element, 'load').pipe(
+      take(1),
+      map(() => {
+        return { image: clipmask, composition: 'destination-in' };
+      })
+    );
+
+    const frame$ = fromEvent(frame.element, 'load').pipe(
+      take(1),
+      map(() => {
+        return { image: frame, composition: 'source-over' };
+      })
+    );
+    //load img
+    token.element.src = token.url;
+    clipmask.element.src = clipmask.url;
+    frame.element.src = frame.url;
+
+    zip(token$, clipMask$, frame$).subscribe((res) => {
+      res.forEach((img) => {
+        if (img.composition == 'source-over') {
+          this.context.globalCompositeOperation = img.composition;
+        }
+        if (img.composition == 'destination-in') {
+          this.context.globalCompositeOperation = img.composition;
+        }
+        this.context.drawImage(
+          img.image.element,
+          img.image.x,
+          img.image.y,
+          img.image.width,
+          img.image.height
+        );
+      });
+    });
   }
 
   ngAfterViewInit() {
@@ -519,6 +550,7 @@ export class CanvasComponent implements OnInit, AfterViewInit, OnChanges {
   }
 
   private render() {
+    console.log('render');
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.zArray.forEach((element: any) => {
       this.drawImage(element);

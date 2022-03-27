@@ -88,7 +88,7 @@ export class PropertiesComponent implements OnInit {
           height: value.heightCtrl ?? 0,
         })
       );
-      this.sharedService.render.next();
+      this.sharedService.render.next(undefined);
     });
   }
 
