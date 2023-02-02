@@ -15,9 +15,9 @@ import {
   SimpleChanges,
 } from '@angular/core';
 import {
-  FormBuilder,
-  FormControl,
-  FormGroup,
+  UntypedFormBuilder,
+  UntypedFormControl,
+  UntypedFormGroup,
   Validators,
 } from '@angular/forms';
 import { ResizableObject } from 'src/app/models/resizable-object.model';
@@ -59,18 +59,18 @@ import { debounceTime, throttleTime } from 'rxjs/operators';
 export class PropertiesComponent implements OnInit {
   constructor(
     public sharedService: SharedService,
-    private _formBuilder: FormBuilder
+    private _formBuilder: UntypedFormBuilder
   ) {}
 
-  formDetails: FormGroup = new FormGroup({});
+  formDetails: UntypedFormGroup = new UntypedFormGroup({});
 
   animation = 'slide';
   ngOnInit(): void {
     this.formDetails = this._formBuilder.group({
-      widthCtrl: new FormControl(null),
-      heightCtrl: new FormControl(null),
-      xCtrl: new FormControl(null),
-      yCtrl: new FormControl(null),
+      widthCtrl: new UntypedFormControl(null),
+      heightCtrl: new UntypedFormControl(null),
+      xCtrl: new UntypedFormControl(null),
+      yCtrl: new UntypedFormControl(null),
     });
 
     this.sharedService.onSelectedObjectChanges
